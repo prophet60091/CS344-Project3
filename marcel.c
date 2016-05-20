@@ -11,6 +11,7 @@
 #include <assert.h>
 #include <sys/wait.h>
 #include "marcel.h"
+#include <sys/types.h>
 
 #define ARYSZ(x)  ( (sizeof(x) / sizeof((x)[0])) )
 
