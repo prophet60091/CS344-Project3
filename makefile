@@ -1,6 +1,6 @@
 default: proj3
 
-proj3: marcel.o marcel.c
+proj3: marcel.h marcel.o marcel.c
 	gcc -Wall -std=c99 -pedantic-errors  -o proj3 marcel.c
 
 clean:
