@@ -135,29 +135,29 @@ int exec_inShell(char * c, char * a){
 
     char * PATH = getenv("PATH");
     printf("%s", PATH);
-    pid = fork();
-
-    switch((int)pid){
-
-        case 0:
-
-           //child process
-            if(execvp(c, a) < 0){
-
-                status = error("bam!");
-            }
-            return status;
-        case -1:
-
-            status = error("boom!");
-            return status;
-
-        default:
-            do {
-                wpid = waitpid(pid, &status, WUNTRACED);
-            } while (!WIFEXITED(status) && !WIFSIGNALED(status));
-            return 0;
-    }
+//    pid = fork();
+//
+//    switch((int)pid){
+//
+//        case 0:
+//
+//           //child process
+//            if(execvp(c, a) < 0){
+//
+//                status = error("bam!");
+//            }
+//            return status;
+//        case -1:
+//
+//            status = error("boom!");
+//            return status;
+//
+//        default:
+//            do {
+//                wpid = waitpid(pid, &status, WUNTRACED);
+//            } while (!WIFEXITED(status) && !WIFSIGNALED(status));
+//            return 0;
+//    }
 
 }
 
