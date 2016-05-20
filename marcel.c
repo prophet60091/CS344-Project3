@@ -10,6 +10,7 @@
 #include <sys/stat.h>
 #include <assert.h>
 #include <sys/wait.h>
+#include "marcel.h"
 
 #define ARYSZ(x)  ( (sizeof(x) / sizeof((x)[0])) )
 
@@ -93,7 +94,7 @@ void get_cmd(char **c, char **a){
 
 }
 
-exec_cmd(char *c, char *a){
+void exec_cmd(char *c, char *a){
 
     //if cmd equals shell command
     if(strcmp(c , "exit") == 0){
