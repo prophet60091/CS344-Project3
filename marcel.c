@@ -159,23 +159,15 @@ int exec_inShell(char * c, char * a){
 
 }
 
-main(int argc, char *argv[]){
+int main(int argc, char *argv[]){
 
-
-//
-//
         char * command =NULL;
         char * argus =NULL;
 
         get_cmd(&command, &argus);
-         exec_cmd(command, argus);
+        exec_cmd(command, argus);
 
-    //printf("your args are %s \n" , argus);
-   // printf("your command was: %s \n" , command);
-
-    fflush;
         free(argus);
         free(command);
-
 
 }
