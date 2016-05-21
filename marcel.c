@@ -148,7 +148,7 @@ int exec_inShell(char * c, char * a){
             return status;
 
         case -1:
-
+            //it's in a bad state
             status = error("boom!");
             return status;
 
