@@ -13,6 +13,7 @@
 #include "marcel.h"
 #include <sys/types.h>
 
+
 #define ARYSZ(x)  ( (sizeof(x) / sizeof((x)[0])) )
 
 //*********************DECLARATIONS
@@ -22,7 +23,7 @@
 //*********************VARIABLES
 const int  CMDSIZE = 2048; // max size of commands
 const int ARGSIZE = 512; // max size of args
-char *args;
+const int MAXARGS = 2560;
 char *cmd;
 int status;
 
@@ -39,15 +40,18 @@ int error(char *msg)
 //#################### Get Direction of the user
 // sets the ans variable for use in other functions
 
-void get_cmd(char **c, char **a){
+char** get_cmd(){
 
+    //todo find a better way to deal with the buffer sizes here - seriously way too big.
+    int count =0;
     size_t totalSize = CMDSIZE+ARGSIZE;
     unsigned long index =0;
-    char *ans;
+    char *ans, *toke;
+    char **args = malloc(sizeof(char*) * totalSize);
 
-    ans = (char *)malloc(totalSize+1); // +1 null term
-    memset(ans, 0, totalSize); // set to 0
+    ans = (char *)malloc(totalSize+1); //hold the user unput
 
+    //output to screen the prompt
     printf("\nMARCEL-0.1:> ");
     fgets(ans, (int)(totalSize), stdin); // read form stdin
 
@@ -57,120 +61,110 @@ void get_cmd(char **c, char **a){
     //get rid of the \n char at the end
     ans[strcspn(ans, "\n")] = 0;
 
-    //get the first occurrence of a space so we can separate cmd from args
-    char * ptrFO = strchr(ans, ' ');
-    index = ptrFO ? ptrFO - ans : 0;
+    //put the rest of the args in the remaining postions
+    toke = strtok(ans, " ");
+    int pos = 0;
+    while (toke != NULL){
 
-    if (index != 0){
-        // set up the cmd
-        *c = malloc(sizeof(char) * index+1);
-        strncpy(*c, ans, index);
-
-        // set up the args
-        size_t argSize = strlen(ans)-index;
-        *a = malloc(sizeof(char) * argSize+1);
-        memset(*a, 0, argSize+1 );
-        strcpy(*a, ans+index+1);
-
-    }else{
-        //just the command
-        *c = malloc(sizeof(char) * strlen(ans)+1);
-        memset(*c, 0,strlen(ans)+1 );
-        strncpy(*c, ans, strlen(ans));
-
-        //set args to Null
-        *a = NULL ;
-
+        args[pos] = toke;
+        toke = strtok(NULL, " "); //update toke, to next space
+        pos++;
     }
 
-//    printf("your args are %s \n" , *a);
-//    printf("your command was: %s \n" , *c);
-//    printf("your entire was: %s \n" , *a);
-
+    args = realloc(args, sizeof(char *) * pos); // trim off what we dont need;
     free(ans);
+    free(toke);
+
+    return args;
+
 
 }
 
-int exec_cmd(char *c, char *a){
+int exec_cmd(char **cmd){
 
     // First, handle Built-ins
     //if cmd equals shell command
-    if(strcmp(c , "exit") == 0){
+    if(strcmp(cmd[0] , "exit") == 0){
 
         exit(0);
 
     //Changing the Dir
-    }else if(strcmp(c , "cd") == 0){
+    }else if(strcmp(cmd[0] , "cd") == 0){
 
-        if(a == NULL){
-            a = malloc(sizeof(char*)*2);
-            a[0]='~';
+        if(ARYSZ(cmd) <= 1){
+            cmd = realloc(cmd, sizeof(char*)*2);
+            cmd[1]= "~";
         }
         //change the directory, and if failed putout stderror
-        if(chdir(a) !=0){
+        if(chdir(cmd[1]) !=0){
             error( "Encountered an error changing directories\n");
             return 0;
         };
     // print out status
-    }else if(strcmp(c , "status") == 0){
+    }else if(strcmp(cmd[0] , "status") == 0){
 
             printf("%i", status);
             return 0;
 
-    }
+    }else{
 
-    // not a built-in? Execute it.
-    return exec_inShell(c, a);
+        // not a built-in? Execute it.
+        return exec_inShell(cmd);
+    }
 
 }
 
 
+int exec_inShell(char ** cmd){
 
-
-int exec_inShell(char * c, char * a){
-
-    pid_t pid;
+    pid_t pcessID = -5;
     pid_t wpid;
-    char *args[1];
-    *args = a; // exec takes a weird argument here
+//    char *args[1];
+//    *args = cmdline; // exec takes a weird argument here
+
 
     const char * PATH = getenv("PATH");
 
-    pid = fork();
-
-    switch((int)pid){
-
-        case 0:
-
-           //child process
-            if((status = execvp(c, args)) < 0){
-                printf("in the child process..");
-                error("bam!");
-            }
-            return status;
+    pcessID = fork();
+    printf("spawning processes..%i", pcessID);
+    switch((int)pcessID){
 
         case -1:
             //it's in a bad state
             status = error("boom!");
             return status;
 
+        case 0:
+
+           //child process
+            status = execvp(cmd[0], cmd);
+
+            //unless exec fails  this never executes
+            error("bam!");
+            return status;
+
         default:
             do {
-                wpid = waitpid(pid, &status, WUNTRACED);
-            } while (!WIFEXITED(status) && !WIFSIGNALED(status));
-            return 0;
+                wpid = waitpid(pcessID, &status, WUNTRACED);
+            } while (!WIFEXITED(status) && !WIFSIGNALED(status) );
+
+//            if(WIFSTOPPED(status)){
+//                error("Child process was stopped");
+//                printf("status stop signal was:%i", WSTOPSIG(status));
+//            }
+            printf("process id that completed is %i", (int)wpid);
+            return status;
     }
 }
 
 int main(int argc, char *argv[]){
 
     while(status == 0){
-        char * command =NULL;
-        char * argus =NULL;
 
-        get_cmd(&command, &argus);
-        exec_cmd(command, argus);
+        char ** cmd = NULL;
 
+        cmd = get_cmd(); // get the command from user
+        exec_cmd(cmd); // exec on it
 
     }
 
