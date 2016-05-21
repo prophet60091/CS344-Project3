@@ -54,15 +54,16 @@ void get_cmd(char **c, char **a){
     if(!strchr(ans, '\n'))
         while(fgetc(stdin)!='\n');//discard until newline
 
-    ans[strcspn(ans, "\n")] = 0; //get rid of the \n char at the end
+    //get rid of the \n char at the end
+    ans[strcspn(ans, "\n")] = 0;
 
-    //get the first occurance of a space so we can separate cmd from args
+    //get the first occurrence of a space so we can separate cmd from args
     char * ptrFO = strchr(ans, ' ');
     index = ptrFO ? ptrFO - ans : 0;
 
     if (index != 0){
         // set up the cmd
-        *c = malloc(sizeof(char) * index+1); //
+        *c = malloc(sizeof(char) * index+1);
         strncpy(*c, ans, index);
 
         // set up the args
@@ -73,12 +74,12 @@ void get_cmd(char **c, char **a){
 
     }else{
         //just the command
-        *c = malloc(sizeof(char) * strlen(ans)+1); //
+        *c = malloc(sizeof(char) * strlen(ans)+1);
         memset(*c, 0,strlen(ans)+1 );
         strncpy(*c, ans, strlen(ans));
 
         //set args to Null
-        *a = NULL ;//
+        *a = NULL ;
 
     }
 
@@ -128,7 +129,8 @@ int exec_cmd(char *c, char *a){
 
 int exec_inShell(char * c, char * a){
 
-    pid_t pid, wpid;
+    pid_t pid;
+    pid_t wpid;
     char *args[1];
     *args = a; // exec takes a weird argument here
 
