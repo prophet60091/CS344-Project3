@@ -27,14 +27,7 @@ char *cmd;
 int status;
 
 //**********************Functions
-size_t array_byteCount(char * arr){
-    int pos = 0;
 
-    while(arr[pos] != '\0'){
-        pos++;
-    }
-    return (size_t)pos;
-}
 
 //error function
 int error(char *msg)
@@ -73,17 +66,19 @@ void get_cmd(char **c, char **a){
         strncpy(*c, ans, index);
 
         // set up the args
-        size_t argSize = array_byteCount(ans)-index;
+        size_t argSize = strlen(ans)-index;
         *a = malloc(sizeof(char) * argSize+1);
+        memset(*a, 0, argSize+1 );
         strcpy(*a, ans+index+1);
 
     }else{
         //just the command
-        *c = malloc(sizeof(char) * array_byteCount(ans)+1); //
-        strncpy(*c, ans, array_byteCount(ans));
+        *c = malloc(sizeof(char) * strlen(ans)+1); //
+        memset(*c, 0,strlen(ans)+1 );
+        strncpy(*c, ans, strlen(ans));
 
         //set args to Null
-        *a = malloc(sizeof(char) * 1); //
+        *a = NULL ;//
 
     }
 
@@ -95,81 +90,86 @@ void get_cmd(char **c, char **a){
 
 }
 
-void exec_cmd(char *c, char *a){
+int exec_cmd(char *c, char *a){
 
+    // First, handle Built-ins
     //if cmd equals shell command
     if(strcmp(c , "exit") == 0){
 
         exit(0);
 
-        //Changing the Dir
+    //Changing the Dir
     }else if(strcmp(c , "cd") == 0){
 
         if(a == NULL){
-            a = realloc(a, sizeof(char*)*2);
+            a = malloc(sizeof(char*)*2);
             a[0]='~';
         }
         //change the directory, and if failed putout stderror
         if(chdir(a) !=0){
-            fprintf(stderr, "Encountered an error changing directories\n");
+            error( "Encountered an error changing directories\n");
+            return 0;
         };
     // print out status
     }else if(strcmp(c , "status") == 0){
-        if(status == 0){
 
             printf("%i", status);
-        }else{
-
-            fprintf(stderr, "%i", status);
-        }
-    }else{
-
-        exec_inShell(c, a);
+            return 0;
 
     }
+
+    // not a built-in? Execute it.
+    return exec_inShell(c, a);
+
 }
+
+
+
 
 int exec_inShell(char * c, char * a){
 
     pid_t pid, wpid;
+    char *args[1];
+    *args = a; // exec takes a weird argument here
 
-    char * PATH = getenv("PATH");
-    printf("%s", PATH);
-//    pid = fork();
-//
-//    switch((int)pid){
-//
-//        case 0:
-//
-//           //child process
-//            if(execvp(c, a) < 0){
-//
-//                status = error("bam!");
-//            }
-//            return status;
-//        case -1:
-//
-//            status = error("boom!");
-//            return status;
-//
-//        default:
-//            do {
-//                wpid = waitpid(pid, &status, WUNTRACED);
-//            } while (!WIFEXITED(status) && !WIFSIGNALED(status));
-//            return 0;
-//    }
+    const char * PATH = getenv("PATH");
 
+    pid = fork();
+
+    switch((int)pid){
+
+        case 0:
+
+           //child process
+            if((status = execvp(c, args)) < 0){
+                printf("in the child process..");
+                error("bam!");
+            }
+            return status;
+
+        case -1:
+
+            status = error("boom!");
+            return status;
+
+        default:
+            do {
+                wpid = waitpid(pid, &status, WUNTRACED);
+            } while (!WIFEXITED(status) && !WIFSIGNALED(status));
+            return 0;
+    }
 }
 
 int main(int argc, char *argv[]){
 
+    while(status == 0){
         char * command =NULL;
         char * argus =NULL;
 
         get_cmd(&command, &argus);
         exec_cmd(command, argus);
 
-        free(argus);
-        free(command);
+
+    }
 
 }
