@@ -48,7 +48,7 @@ FILE * open_file(char * dir, char * fileName, char * action){
     //open the newfile for writing
     // with the ROOM: + Room Name
     fp = fopen(file , action );
-    if(fp < 0) { // opening fails
+    if((int)fp < 0) { // opening fails
 
         error("Couldn't open file " );
         return NULL;
