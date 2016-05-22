@@ -37,14 +37,17 @@ int error(char *msg)
 
 FILE * open_file(char * dir, char * fileName, char * action){
 
-    char file[50];
+    char *file;
+    int size = (int)(strlen(dir) + strlen(fileName) + 2);
     FILE *fp;
+    file = malloc(sizeof(char)*size);
+
     //combine dir name and name of file
-    snprintf(file, 50, "%s/%s", dir, fileName);
+    snprintf(file, (size_t)size, "%s/%s", dir, fileName);
 
     //open the newfile for writing
     // with the ROOM: + Room Name
-    if((fp = fopen(file , action )) < 0) { // opening failes
+    if((fp = fopen(file , action )) < 0) { // opening fails
 
         error("Couldn't open file " );
         return NULL;
@@ -159,6 +162,7 @@ int exec_inShell(char ** cmd){
     pid_t pcessID = -5;
     pid_t wpid;
     int rpos = 0;
+    int dx=0;
 //    char *args[1];
 //    *args = cmdline; // exec takes a weird argument here
 
@@ -166,29 +170,31 @@ int exec_inShell(char ** cmd){
     if ((rpos = checkRedirect(cmd)) > 0){
         FILE *fp;
         int fp2;
-        char buff[512];
+        char buff[CMDSIZE];
 
         //get the file name requestd:
             //its between rpos+1 and next space
 
-
-        fp = open_file(getcwd(buff, 512), "temp.tmp", "w+");
+        fp = open_file(getcwd(buff, CMDSIZE), "temp.tmp", "w+");
 
         if (fp < 0 ){
             error("cant create temp buffer file");
             exit(42);
         }
 
-        fp2 = dup2((int)fp, 1);
+        //depending on the type of redirect we change the value in dup2
+        if(strcmp(cmd[rpos], ">") == 0){
+            dx = 1;
+        }
+
+        fp2 = dup2((int)fp, dx);
         if (fp2 < 0 ){
-            error("cant create temp duplicate buffer file");
+            error("cant create temp dup2 buffer file");
             exit(42);
         }
     }
 
     //follow instructions on lecture 12@6:10^^^
-
-    //change function if the redirect is <
     //read the file into stdin i guess and
     //
 
