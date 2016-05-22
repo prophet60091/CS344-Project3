@@ -47,7 +47,8 @@ FILE * open_file(char * dir, char * fileName, char * action){
 
     //open the newfile for writing
     // with the ROOM: + Room Name
-    if((fp = fopen(file , action )) < 0) { // opening fails
+    fp = fopen(file , action );
+    if(fp < 0) { // opening fails
 
         error("Couldn't open file " );
         return NULL;
@@ -61,10 +62,7 @@ FILE * open_file(char * dir, char * fileName, char * action){
 
 char** get_cmd(){
 
-    //todo find a better way to deal with the buffer sizes here - seriously way too big.
-    int count =0;
     size_t totalSize = CMDSIZE+ARGSIZE;
-    unsigned long index =0;
     char *ans, *toke;
     char **args = malloc(sizeof(char*) * totalSize);
 
@@ -168,8 +166,7 @@ int exec_inShell(char ** cmd){
 
     //if process has a redirect:
     if ((rpos = checkRedirect(cmd)) > 0){
-        FILE *fp;
-        int fp2;
+        FILE *fp, *fp2;
         char buff[CMDSIZE];
 
         //get the file name requestd:
@@ -177,7 +174,7 @@ int exec_inShell(char ** cmd){
 
         fp = open_file(getcwd(buff, CMDSIZE), "temp.tmp", "w+");
 
-        if (fp < 0 ){
+        if ((int)fp < 0 ){
             error("cant create temp buffer file");
             exit(42);
         }
@@ -187,8 +184,8 @@ int exec_inShell(char ** cmd){
             dx = 1;
         }
 
-        fp2 = dup2((int)fp, dx);
-        if (fp2 < 0 ){
+        fp2 = (FILE*)dup2((int)fp, dx);
+        if ((int)fp2 < 0 ){
             error("cant create temp dup2 buffer file");
             exit(42);
         }
