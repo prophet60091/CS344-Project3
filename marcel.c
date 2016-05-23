@@ -153,7 +153,7 @@ int changeOut(char ** cmd, int rpos){
         error("failed creating temp dup2 buffer file");
         exit(42);
     }
-    return fd2;
+    return fd;
 
 }
 
