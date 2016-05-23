@@ -189,7 +189,9 @@ char** get_cmd(){
 
 
 //TODO Alter this so that it returns-maybe the number of redirs?
-//make a separate to determine positions
+//Checks if there are any redirects
+//@param  pointer to pointers of commands
+//returns the postion of them in the command
 int checkRedirect(char ** cmd){
     int pos = 0;
 
@@ -204,7 +206,9 @@ int checkRedirect(char ** cmd){
 
 }
 
-
+//Checks if if the background operator has been used
+//@param  pointer to pointers of commands
+//returns the position of it in the command
 int checkBackground(char ** cmd){
     int pos = 0;
 
@@ -218,8 +222,10 @@ int checkBackground(char ** cmd){
     return 0;
 
 }
-
-
+//gets the length of the pointer array of pointers
+// /note: (cant find a built in function that does this well)
+//@param  pointer to pointers of commands
+//returns the length
 int checkCmdSize(char ** cmd){
     int pos = 0;
     while(cmd[pos] != NULL){
@@ -260,12 +266,12 @@ int changeOut(char ** cmd, int rpos, int bgFlag){
                 error("failed creating dev/null dup2");
                 return fd2;
             }
-            //direct standard in at dev/null
-            fd2 = dup2(fd, 0);
-            if ((int)fd2 < 0 ){
-                error("failed creating dev/null dup2");
-                return fd2;
-            }
+//            //direct standard in at dev/null
+//            fd2 = dup2(fd, 0);
+//            if ((int)fd2 < 0 ){
+//                error("failed creating dev/null dup2");
+//                return fd2;
+//            }
          break;
 
         default:
@@ -291,7 +297,11 @@ int changeOut(char ** cmd, int rpos, int bgFlag){
 
 }
 
-
+// Takes the users commands and turns them into actions
+// @ param pointer to pointers of the command retuned by get_cmd
+// Additionally runs the built in functions
+// anything else is passed off to be execd in shell
+// returnes 0 when successful
 int exec_cmd(char **cmd){
 
     // First, handle Built-ins
@@ -332,6 +342,11 @@ int exec_cmd(char **cmd){
 
 }
 
+// Executes the command after forking
+// @ param pointer to pointers of the command
+// waits on foreground processes
+// does not wait on background processes
+// returns the status of the command after execution
 int exec_inShell(char ** cmd){
 
     pid_t pcessID = -5;
@@ -345,6 +360,47 @@ int exec_inShell(char ** cmd){
     if(rpos > 0) {
         bgFlag = 1;
     }
+
+    //ADDDED FOR TESTING ONLY:
+    rpos = checkBackground(cmd);
+    if(rpos > 0){
+
+        fd= changeOut(cmd, rpos, 1);
+
+        //strip out the end of cmd we wont need it anymore
+        cmd[rpos] = NULL;
+        cmd = realloc(cmd, (size_t)rpos);
+
+        //REQ print out if file cannot be created
+        if(fd < 0){
+
+            error("Could not redirect");
+            BIStatus = 1;
+            return BIStatus; // we don't want to kill everything because of one bad execution
+        }
+
+    }
+
+    rpos = checkRedirect(cmd);
+    if (rpos  > 0){
+
+        fd = changeOut(cmd, rpos, 0);  //alter the redirects as needed
+
+        //strip out the end of cmd we wont need it anymore
+        cmd[rpos] = NULL;
+        cmd = realloc(cmd, (size_t)rpos);
+
+        //REQ print out if file cannot be created
+        if(fd < 0){
+
+            error("Could not redirect");
+            BIStatus = 1;
+            return BIStatus; // we don't want to kill everything because of one bad execution
+        }
+    }
+
+
+    ///END TESTING///////////////////////////
 
     pcessID = fork();
     //printf("spawning processes..%i", pcessID);
@@ -381,7 +437,7 @@ int exec_inShell(char ** cmd){
                 }
 
             }
-
+            // checks if the code has any redirects
             rpos = checkRedirect(cmd);
             if (rpos  > 0){
 
@@ -400,14 +456,14 @@ int exec_inShell(char ** cmd){
                 }
             }
 
+            // execute it and save the status of the command
             status = execvp(cmd[0], cmd);
 
             //it failed
             if(status < 0){
 
                 //kill it!!
-                //fprintf(stdout, "Child process quit with status: %i", status);
-
+                fprintf(stdout, "Child process quit with status: %i", status);
                 error("bam!");
 
                 BIStatus = 1;
@@ -433,33 +489,35 @@ int exec_inShell(char ** cmd){
         // as long as the process didn't exit, or receive a signal, so it's waiting util that happens
         // when it does, we know that the child process is complete.
         default:
-            // we're not running a bgnd process so start wiating for the child to quit.
-            if(!bgFlag){
+
+            if(!bgFlag){// we're not running a bgnd process so start waiting for the child to quit.
 
                 do {
                     wpid = waitpid(pcessID, &status, WUNTRACED);
 
                 } while (!WIFEXITED(status) && !WIFSIGNALED(status));
 
-            if(WIFSTOPPED(status)){
-                //Child FG process was stopped;
-                fprintf(stdout, "status stop signal was:%i", status);
+                if(WIFSTOPPED(status)){
+                    //Child FG process was stopped;
+                    fprintf(stdout, "status stop signal was:%i", status);
 
-            }
-            // we fisnishd a process and we have a redirect - better close the file;
-            // it might need to also be reset.
+                }
+                // we fisnishd a process and we have a redirect - better close the file;
+                // it might need to also be reset.
 
                 fprintf(stdout, "Child process id that completed is %i\n", (int) wpid);
                 fprintf(stdout, "Child process exit status %i\n", status);
 
 
             }else{
-                // store the process
+                // store the process - WE HAVE A BG PROCESS TO DEAL WITH
                 addChild(kids, pcessID);
                 fprintf(stdout, "Background process started: %i\n", pcessID);
 
             }
 
+            //sometimes we get a bad status but still return ok
+            // because shell should keep running
             if(status > 0){
                 BIStatus = 1;
                 return 1;
@@ -468,7 +526,9 @@ int exec_inShell(char ** cmd){
 
     return 0; //fixes control reaches end of non-void (never executes tho...)
 }
-
+// Handle Background Processes
+// Called to clean up BG process that did quit and announce this
+// Not sure what I want to return atm....
 int handleBackground(){
 
     int status = 0;
@@ -518,12 +578,11 @@ int handleBackground(){
     }
 
     return status;
-
 }
 
 int main(int argc, char *argv[]){
-    //Initialzations:
 
+    //Initialzations:
     kids = createKiddos(100);
 
     //If status is 1 or 0 we're good
@@ -540,10 +599,9 @@ int main(int argc, char *argv[]){
         }
 
         handleBackground();
-
-       // printf("Redirect is %i, cmdSize is %i", checkRedirect(cmd), checkCmdSize(cmd) );
     }
 
+    //free the memories
     free(cmd);
     deleteKiddos(kids);
 
