@@ -28,6 +28,13 @@ const int MAXARGS = 2560;
 char *cmd;
 int status;
 int BIStatus = 0;
+
+typedef struct kiddos{
+    pid_t * childProcs;
+    int size;
+    int cap;
+}kiddos;
+
 kiddos* kids;
 
 //error function
