@@ -43,7 +43,7 @@ int open_file(char * fileName, int rw){
     //open file for reading unless flag is set
     fd = open(fileName, O_RDONLY);
     if (rw == 1){
-        fd = open(fileName, O_WRONLY|O_CREAT|O_TRUNC, 644);
+        fd = open(fileName, O_WRONLY|O_CREAT|O_TRUNC, 755);
     }
 
     if(fd < 0) { // opening fails
