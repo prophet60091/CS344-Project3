@@ -114,7 +114,7 @@ int open_file(char * fileName, int rw){
 
         error("Couldn't open file " );
         BIStatus =1;
-        return 1;
+        return fd;
     }
 
     return fd; // returning the file pointer
@@ -215,33 +215,54 @@ int checkCmdSize(char ** cmd){
 // depending on the direction it switches the output between stdin and stout
 //@params array of pointers to char pointers, that contain the issued command
 //@params the position of the redirect in the array of pointers
-int changeOut(char ** cmd, int rpos){
+//@params they type of change out, 0(swapping stdin or stout for a file) 1(point to dev/null)
+int changeOut(char ** cmd, int rpos, int bgFlag){
 
     int fd2 = -10;
     int fd = -10;
-    int dx = 0;  // if this is 0 were inputting not outputting
+    int dx = 0;  // if this is 0(stdin) were inputting not outputting
     char buff[ARGSIZE]; // place to stuff the name used in the redirect
 
     //get the file name requestd:
     //its between rpos+1 and next space rmbr:getcwd(buff, CMDSIZE),
     //get the  char * ptrFO = strchr(ans, ' ');
+    switch(bgFlag){
 
-    //depending on the type of redirect we change the value in dup2
-    if(strcmp(cmd[rpos], ">") == 0){
-        dx = 1;
-    }
+        case 1:
 
-    fd = open_file(cmd[rpos+1], dx);
+           fd = open_file("/dev/null", 1);
 
-    if (fd < 0 ){
-        error("failed creating temp file");
-        exit(42);
-    }
+            if (fd < 0 ){
+                error("Couldnt open /dev/null");
+                return fd;
+            }
 
-    fd2 = dup2(fd, dx);
-    if ((int)fd2 < 0 ){
-        error("failed creating temp dup2 buffer file");
-        exit(42);
+            //direct standard out at dev/null
+            fd2 = dup2(fd, 1);
+            if ((int)fd2 < 0 ){
+                error("failed creating dev/null dup2");
+                return fd2;
+            }
+         break;
+
+        default:
+        //depending on the type of redirect we change the value in dup2
+        if(strcmp(cmd[rpos], ">") == 0){
+            dx = 1;
+        }
+
+        fd = open_file(cmd[rpos+1], dx);
+
+        if (fd < 0 ){
+            error("failed creating temp file");
+            return fd;
+        }
+
+        fd2 = dup2(fd, dx);
+        if ((int)fd2 < 0 ){
+            error("failed creating temp dup2 buffer file");
+            return fd;
+        }
     }
     return fd;
 
@@ -295,8 +316,7 @@ int exec_inShell(char ** cmd){
     int rpos = 0;
     int dx=0;
     int fd = -1;
-    int test;
-
+    int bgFlag = 0;
 
     pcessID = fork();
     //printf("spawning processes..%i", pcessID);
@@ -311,31 +331,49 @@ int exec_inShell(char ** cmd){
 
         case 0:
 
-
+            //todo yes code is redundant, but..
+            // relies so much on the values getting set it's hard to pack it into one function
             //if process has a redirect:
             if ((rpos = checkRedirect(cmd)) > 0){
 
-                fd = changeOut(cmd, rpos);  //alter the redirects as needed
+                fd = changeOut(cmd, rpos, 0);  //alter the redirects as needed
 
                 //strip out the end of cmd we wont need it anymore
                 cmd[rpos] = NULL;
                 cmd = realloc(cmd, (size_t)rpos);
 
                 //REQ print out if file cannot be created
-                if(fd > 0){
+                if(fd < 0){
 
                     error("Could not redirect");
-                    exit(1);
+                    BIStatus = 1;
+                    return BIStatus; // we don't want to kill everything because of one bad execution
                 }
             }
 
-            //If process has a &
-            if(rpos = checkBackground(cmd)){
+            //If process has a & background process request
+            if((rpos = checkBackground(cmd) > 0)){
+                bgFlag = 1;
+                fprintf(stdout, "Background process started %i\n", (int)wpid);
+                fd= changeOut(cmd, rpos, 1);
+
+                //strip out the end of cmd we wont need it anymore
+                cmd[rpos] = NULL;
+                cmd = realloc(cmd, (size_t)rpos);
+
+                //REQ print out if file cannot be created
+                if(fd < 0){
+
+                    error("Could not redirect");
+                    BIStatus = 1;
+                    return BIStatus; // we don't want to kill everything because of one bad execution
+                }
+
 
             }
 
-
            //child process execute
+            //execvp returnes -1 if it fails
             status = execvp(cmd[0], cmd);
 
             //it failed
@@ -343,25 +381,31 @@ int exec_inShell(char ** cmd){
 
                 //kill it!!
                 fprintf(stdout, "Child process quit with status: %i", status);
-                //unless exec fails  this never executes
+
                 error("bam!");
+
                 BIStatus = 1;
-                return status;
+                return BIStatus; // we don't want to kill everything because of one bad execution
 
-            }else{ //child did something  well, praise it
-
+            }else{
+                // Code executed successfully
                 //there was a redirect and it finished;, we need to close a file
                 if(fd > 0){
-                    test=  close(fd);
-                    printf("%i", test);
+                     close(fd);
                 }
 
-                return status;
+                //sometimes we get a bad status but still return ok
+                BIStatus = 0;
+                if(status > 0){
+                    BIStatus = 1;
+                }
+                return 0;
             }
-
-
-
-
+        //**http://brennan.io/2015/01/16/write-a-shell-in-c/**//
+        //Too elegant to pass up. it works really well
+        //  were storing the result of waitpid using WUNTRACED, (reports its status whether stopped or not)
+        // as long as the process didn't exit, or receive a signal, so it's waiting util that happens
+        // when it does, we know that the child process is complete.
         default:
             do {
 
@@ -372,15 +416,22 @@ int exec_inShell(char ** cmd){
 //            if(WIFSTOPPED(status)){
 //                error("Child process was stopped");
 //                printf("status stop signal was:%i", WSTOPSIG(status));
-                // kill -kill something??? wpid
+//                // kill -kill something??? wpid
 //            }
-            // we fisnishd a process and we have a redirect - better close the file;
-            // it might need to also be reset.
+//            // we fisnishd a process and we have a redirect - better close the file;
+//            // it might need to also be reset.
 
             fprintf(stdout, "Child process id that completed is %i\n", (int)wpid);
             fprintf(stdout, "Child process exit status %i\n", status);
-            return status;
+
+
+            if(status > 0){
+                BIStatus = 1;
+                return 1;
+            }
     }
+
+    return 0; //fixes control reaches end of non-void (never executes tho...)
 }
 
 int main(int argc, char *argv[]){
@@ -388,7 +439,11 @@ int main(int argc, char *argv[]){
     kiddos* kids;
     kids = createKiddos(100);
 
-    while(status == 0){
+    //If status is 1 or 0 we're good
+    // 1 means we got an error from child
+    // 0 means all is square
+    // anything else we effed something up, Blame it on management.
+    while(status == 0 || status == 1){
 
         char ** cmd = NULL;
         cmd = get_cmd(); // get the command from user
