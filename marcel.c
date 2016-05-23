@@ -28,12 +28,7 @@ const int MAXARGS = 2560;
 char *cmd;
 int status;
 int BIStatus = 0;
-
-typedef struct kiddos{
-    pid_t * childProcs;
-    int size;
-    int cap;
-}kiddos;
+kiddos* kids;
 
 //error function
 int error(char *msg)
@@ -100,6 +95,22 @@ void deleteKiddos(kiddos *v)
     free(v);
 }
 
+void removeAtKiddos(kiddos *v, int idx){
+    int i;
+    assert(v!= 0);
+    assert(idx < v->size);
+    assert(idx >= 0);
+
+    //Move all elements up
+
+    for(i = idx; i < v->size-1; i++){
+        v->childProcs[i] = v->childProcs[i+1];
+    }
+
+    v->size--;
+
+}
+
 int open_file(char * fileName, int rw){
 
     int fd;
@@ -140,7 +151,7 @@ char** get_cmd(){
 
     //make sure stdin is empty;
     fseek(stdin,0,SEEK_END);
-
+    fflush(stdin);
     //output to screen the prompt
     printf("\nMARCEL-0.1:> ");
     fgets(ans, (int)(totalSize), stdin); // read form stdin
@@ -243,6 +254,12 @@ int changeOut(char ** cmd, int rpos, int bgFlag){
                 error("failed creating dev/null dup2");
                 return fd2;
             }
+            //direct standard in at dev/null
+            fd2 = dup2(fd, 0);
+            if ((int)fd2 < 0 ){
+                error("failed creating dev/null dup2");
+                return fd2;
+            }
          break;
 
         default:
@@ -318,9 +335,15 @@ int exec_inShell(char ** cmd){
     int fd = -1;
     int bgFlag = 0;
 
+    //have to check bg flag before forking, otherwise we loose the state of this:
+    rpos = checkBackground(cmd);
+    if(rpos > 0) {
+        bgFlag = 1;
+    }
+
     pcessID = fork();
     //printf("spawning processes..%i", pcessID);
-    //adapted from lecture 9 cs344
+    //partially adapted from lecture 9 cs344
     switch((int)pcessID){
 
         case -1:
@@ -334,7 +357,28 @@ int exec_inShell(char ** cmd){
             //todo yes code is redundant, but..
             // relies so much on the values getting set it's hard to pack it into one function
             //if process has a redirect:
-            if ((rpos = checkRedirect(cmd)) > 0){
+            //If process has a & background process request
+            rpos = checkBackground(cmd);
+            if(rpos > 0){
+
+                fd= changeOut(cmd, rpos, 1);
+
+                //strip out the end of cmd we wont need it anymore
+                cmd[rpos] = NULL;
+                cmd = realloc(cmd, (size_t)rpos);
+
+                //REQ print out if file cannot be created
+                if(fd < 0){
+
+                    error("Could not redirect");
+                    BIStatus = 1;
+                    return BIStatus; // we don't want to kill everything because of one bad execution
+                }
+
+            }
+
+            rpos = checkRedirect(cmd);
+            if (rpos  > 0){
 
                 fd = changeOut(cmd, rpos, 0);  //alter the redirects as needed
 
@@ -351,36 +395,13 @@ int exec_inShell(char ** cmd){
                 }
             }
 
-            //If process has a & background process request
-            if((rpos = checkBackground(cmd) > 0)){
-                bgFlag = 1;
-                fprintf(stdout, "Background process started %i\n", (int)wpid);
-                fd= changeOut(cmd, rpos, 1);
-
-                //strip out the end of cmd we wont need it anymore
-                cmd[rpos] = NULL;
-                cmd = realloc(cmd, (size_t)rpos);
-
-                //REQ print out if file cannot be created
-                if(fd < 0){
-
-                    error("Could not redirect");
-                    BIStatus = 1;
-                    return BIStatus; // we don't want to kill everything because of one bad execution
-                }
-
-
-            }
-
-           //child process execute
-            //execvp returnes -1 if it fails
             status = execvp(cmd[0], cmd);
 
             //it failed
             if(status < 0){
 
                 //kill it!!
-                fprintf(stdout, "Child process quit with status: %i", status);
+                //fprintf(stdout, "Child process quit with status: %i", status);
 
                 error("bam!");
 
@@ -401,29 +422,38 @@ int exec_inShell(char ** cmd){
                 }
                 return 0;
             }
-        //**http://brennan.io/2015/01/16/write-a-shell-in-c/**//
+        //ADAPTED FROM **http://brennan.io/2015/01/16/write-a-shell-in-c/**//
         //Too elegant to pass up. it works really well
         //  were storing the result of waitpid using WUNTRACED, (reports its status whether stopped or not)
         // as long as the process didn't exit, or receive a signal, so it's waiting util that happens
         // when it does, we know that the child process is complete.
         default:
-            do {
+            // we're not running a bgnd process so start wiating for the child to quit.
+            if(!bgFlag){
 
-                wpid = waitpid(pcessID, &status, WUNTRACED);
+                do {
+                    wpid = waitpid(pcessID, &status, WUNTRACED);
 
-            } while (!WIFEXITED(status) && !WIFSIGNALED(status) );
+                } while (!WIFEXITED(status) && !WIFSIGNALED(status));
 
-//            if(WIFSTOPPED(status)){
-//                error("Child process was stopped");
-//                printf("status stop signal was:%i", WSTOPSIG(status));
-//                // kill -kill something??? wpid
-//            }
-//            // we fisnishd a process and we have a redirect - better close the file;
-//            // it might need to also be reset.
+            if(WIFSTOPPED(status)){
+                //Child FG process was stopped;
+                fprintf(stdout, "status stop signal was:%i", status);
 
-            fprintf(stdout, "Child process id that completed is %i\n", (int)wpid);
-            fprintf(stdout, "Child process exit status %i\n", status);
+            }
+            // we fisnishd a process and we have a redirect - better close the file;
+            // it might need to also be reset.
 
+                fprintf(stdout, "Child process id that completed is %i\n", (int) wpid);
+                fprintf(stdout, "Child process exit status %i\n", status);
+
+
+            }else{
+                // store the process
+                addChild(kids, pcessID);
+                fprintf(stdout, "Background process started: %i\n", pcessID);
+
+            }
 
             if(status > 0){
                 BIStatus = 1;
@@ -434,9 +464,61 @@ int exec_inShell(char ** cmd){
     return 0; //fixes control reaches end of non-void (never executes tho...)
 }
 
+int handleBackground(){
+
+    int status = 0;
+    int i;
+    char bigBuff[128];
+    //for each child in the background
+    for(i=0; i < kids->size; i++){
+
+        pid_t waiter = waitpid(kids->childProcs[i], &status, WNOHANG);
+
+        if (waiter == 0) {
+            // do..nothing everything is just fine
+            // let the process ride
+
+        } else if (waiter == -1) {
+            //error("Nothing to clean up?...or some orther failure");
+
+        } else {
+
+            // something went wrong with the process
+            if(status > 0) {
+                // Error
+                //fprintf(bigBuff, "Child Process:%i ended with %i status", (int) kids->childProcs[i], status);
+                error("Child Process died...probably dysentery, or lupus...nah, it's never lupus");
+
+                //remove it from the watch list
+                removeAtKiddos(kids, i);
+
+                //put it out of it's misery
+                kill(kids->childProcs[i], SIGKILL);
+
+                BIStatus = 1;
+
+
+            }else{// something went right with the process but it's done
+
+                // Child exited successfully
+                //fprintf(stdout, "Child Process:%i ended with %i status", (int)kids->childProcs[i], status);
+                BIStatus = 0;
+
+                //remove it from the watch list
+                removeAtKiddos(kids, i);
+
+            }
+
+        }
+    }
+
+    return status;
+
+}
+
 int main(int argc, char *argv[]){
     //Initialzations:
-    kiddos* kids;
+
     kids = createKiddos(100);
 
     //If status is 1 or 0 we're good
@@ -452,19 +534,12 @@ int main(int argc, char *argv[]){
             status = exec_cmd(cmd); // exec on it
         }
 
+        handleBackground();
 
        // printf("Redirect is %i, cmdSize is %i", checkRedirect(cmd), checkCmdSize(cmd) );
     }
+
     free(cmd);
-
-
-//    //we'll use this and others to store the kids, and check them delete them etc.
-//     addChild(kids, getpid()) ;
-//    int i = 0;
-//    for(i=0; i < kids->size; i++ ){
-//        printf("%i", (int)kids->childProcs[i]);
-//    }
-
-
+    deleteKiddos(kids);
 
 }

@@ -13,4 +13,11 @@ int checkCmdSize(char ** cmd);
 int checkRedirect(char ** cmd);
 int open_file( char * fileName, int rw);
 
+
+typedef struct kiddos{
+    pid_t * childProcs;
+    int size;
+    int cap;
+}kiddos;
+
 #endif //PROJECT3_MARCEL_H
