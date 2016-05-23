@@ -11,6 +11,6 @@ char **get_cmd();
 int error(char *msg);
 int checkCmdSize(char ** cmd);
 int checkRedirect(char ** cmd);
-FILE * open_file(char * dir, char * fileName, char * action);
+int open_file( char * fileName, int rw);
 
 #endif //PROJECT3_MARCEL_H

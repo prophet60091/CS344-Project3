@@ -12,7 +12,8 @@
 #include <sys/wait.h>
 #include "marcel.h"
 #include <sys/types.h>
-
+#include <sys/stat.h>
+#include <fcntl.h>
 
 #define ARYSZ(x)  ( (sizeof(x) / sizeof((x)[0])) )
 
@@ -35,25 +36,23 @@ int error(char *msg)
     return 1;
 }
 
-FILE * open_file(char * dir, char * fileName, char * action){
+int open_file(char * fileName, int rw){
 
-    char *file;
-    int size = (int)(strlen(dir) + strlen(fileName) + 2);
-    FILE *fp;
-    file = malloc(sizeof(char)*size);
+    int fd;
 
-    //combine dir name and name of file
-    snprintf(file, (size_t)size, "%s/%s", dir, fileName);
+    //open file for reading unless flag is set
+    fd = open(fileName, O_RDONLY);
+    if (rw == 1){
+        fd = open(fileName, O_WRONLY|O_CREAT|O_TRUNC, 644);
+    }
 
-    //open the newfile for writing
-    // with the ROOM: + Room Name
-    fp = fopen(file , action );
-    if((int)fp < 0) { // opening fails
+    if(fd < 0) { // opening fails
 
         error("Couldn't open file " );
-        return NULL;
+        return -1;
     }
-    return fp; // returning the file pointer
+
+    return fd; // returning the file pointer
 }
 
 
@@ -67,6 +66,9 @@ char** get_cmd(){
     char **args = malloc(sizeof(char*) * totalSize);
 
     ans = (char *)malloc(totalSize+1); //hold the user unput
+
+    //make sure stdin is empty;
+    fseek(stdin,0,SEEK_END);
 
     //output to screen the prompt
     printf("\nMARCEL-0.1:> ");
@@ -94,7 +96,6 @@ char** get_cmd(){
 
     return args;
 
-
 }
 
 int checkRedirect(char ** cmd){
@@ -118,6 +119,42 @@ int checkCmdSize(char ** cmd){
         pos++;
     }
     return pos;
+}
+
+//Changes the output file in the case of redirects
+// depending on the direction it switches the output between stdin and stout
+//@params array of pointers to char pointers, that contain the issued command
+//@params the position of the redirect in the array of pointers
+int changeOut(char ** cmd, int rpos){
+
+    int fd2 = -10;
+    int fd = -10;
+    int dx = 0;  // if this is 0 were inputting not outputting
+    char buff[ARGSIZE]; // place to stuff the name used in the redirect
+
+    //get the file name requestd:
+    //its between rpos+1 and next space rmbr:getcwd(buff, CMDSIZE),
+    //get the  char * ptrFO = strchr(ans, ' ');
+
+    //depending on the type of redirect we change the value in dup2
+    if(strcmp(cmd[rpos], ">") == 0){
+        dx = 1;
+    }
+
+    fd = open_file(cmd[rpos+1], dx);
+
+    if (fd < 0 ){
+        error("failed creating temp file");
+        exit(42);
+    }
+
+    fd2 = dup2(fd, dx);
+    if ((int)fd2 < 0 ){
+        error("failed creating temp dup2 buffer file");
+        exit(42);
+    }
+    return fd2;
+
 }
 
 
@@ -161,45 +198,13 @@ int exec_inShell(char ** cmd){
     pid_t wpid;
     int rpos = 0;
     int dx=0;
-//    char *args[1];
-//    *args = cmdline; // exec takes a weird argument here
+    int fd = -1;
+    int test;
 
-    //if process has a redirect:
-    if ((rpos = checkRedirect(cmd)) > 0){
-        FILE *fp, *fp2;
-        char buff[CMDSIZE];
-
-        //get the file name requestd:
-            //its between rpos+1 and next space
-
-        fp = open_file(getcwd(buff, CMDSIZE), "temp.tmp", "w+");
-
-        if ((int)fp < 0 ){
-            error("cant create temp buffer file");
-            exit(42);
-        }
-
-        //depending on the type of redirect we change the value in dup2
-        if(strcmp(cmd[rpos], ">") == 0){
-            dx = 1;
-        }
-
-        fp2 = (FILE*)dup2((int)fp, dx);
-        if ((int)fp2 < 0 ){
-            error("cant create temp dup2 buffer file");
-            exit(42);
-        }
-    }
-
-    //follow instructions on lecture 12@6:10^^^
-    //read the file into stdin i guess and
-    //
-
-
-    const char * PATH = getenv("PATH");
 
     pcessID = fork();
-    printf("spawning processes..%i", pcessID);
+    //printf("spawning processes..%i", pcessID);
+    //adapted from lecture 9 cs344
     switch((int)pcessID){
 
         case -1:
@@ -209,8 +214,35 @@ int exec_inShell(char ** cmd){
 
         case 0:
 
-           //child process
+            //if process has a redirect:
+            if ((rpos = checkRedirect(cmd)) > 0){
+
+                fd = changeOut(cmd, rpos);
+
+                //strip out the end of cmd we wont need it anymore
+                cmd[rpos] = NULL;
+                cmd = realloc(cmd, (size_t)rpos);
+
+            }
+
+           //child process execute
             status = execvp(cmd[0], cmd);
+
+            //it failed
+            if(status < 0){
+
+                //kill it!!
+
+            }else{ //child did something  well, praise it
+
+                //there was a redirect we need to close a file
+                if(fd > 0){
+                  test=  close(fd);
+                    printf("%i", test);
+                }
+
+            }
+
 
             //unless exec fails  this never executes
             error("bam!");
@@ -219,6 +251,7 @@ int exec_inShell(char ** cmd){
         default:
             do {
                 wpid = waitpid(pcessID, &status, WUNTRACED);
+
             } while (!WIFEXITED(status) && !WIFSIGNALED(status) );
 
 //            if(WIFSTOPPED(status)){
@@ -226,7 +259,11 @@ int exec_inShell(char ** cmd){
 //                printf("status stop signal was:%i", WSTOPSIG(status));
                 // kill -kill something??? wpid
 //            }
-            printf("process id that completed is %i", (int)wpid);
+            // we fisnishd a process and we have a redirect - better close the file;
+            // it might need to also be reset.
+
+            printf("Child process id that completed is %i\n", (int)wpid);
+            printf("Child process exit status %i\n", status);
             return status;
     }
 }
@@ -236,10 +273,8 @@ int main(int argc, char *argv[]){
     while(status == 0){
 
         char ** cmd = NULL;
-        int re;
         cmd = get_cmd(); // get the command from user
-        exec_cmd(cmd); // exec on it
-
+        status = exec_cmd(cmd); // exec on it
 
        // printf("Redirect is %i, cmdSize is %i", checkRedirect(cmd), checkCmdSize(cmd) );
     }
