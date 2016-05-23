@@ -14,5 +14,6 @@ int checkRedirect(char ** cmd);
 int open_file( char * fileName, int rw);
 int handleBackground();
 int checkBackground(char ** cmd);
+void turnLightsOFF(void);
 
 #endif //PROJECT3_MARCEL_H

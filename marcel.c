@@ -153,9 +153,11 @@ char** get_cmd(){
 
     ans = (char *)malloc(totalSize+1); //hold the user unput
 
-    //make sure stdin is empty;
+    //make sure stdin is empty;//Flush it all!!!!
     fseek(stdin,0,SEEK_END);
     fflush(stdin);
+    fflush(stdout);  // bc of unexpl. behavior on EOS
+
     //output to screen the prompt
     printf("\nMARCEL-0.1:> ");
     fgets(ans, (int)(totalSize), stdin); // read form stdin
@@ -305,7 +307,8 @@ int exec_cmd(char **cmd){
     //if cmd equals shell command
     if(strcmp(cmd[0] , "exit") == 0){
 
-        exit(0);//todo fix this it's not right
+        atexit(turnLightsOFF);
+        exit(1);//todo fix this it's not right needs to handle kill of children
 
     //Changing the Dir
     }else if(strcmp(cmd[0] , "cd") == 0){
@@ -446,7 +449,7 @@ int exec_inShell(char ** cmd){
         // as long as the process didn't exit, or receive a signal, so it's waiting util that happens
         // when it does, we know that the child process is complete.
         default:
-            printf("BGFLAG SET  %i", bgFlag);
+            //printf("BGFLAG SET  %i", bgFlag);
             if(!bgFlag){// we're not running a bgnd process so start waiting for the child to quit.
 
                 do {
@@ -537,6 +540,11 @@ int handleBackground(){
     return status;
 }
 
+void turnLightsOFF(void)
+{
+    handleBackground();
+}
+
 int main(int argc, char *argv[]){
 
     //Initialzations:
@@ -551,7 +559,7 @@ int main(int argc, char *argv[]){
         char ** cmd = NULL;
         cmd = get_cmd(); // get the command from user
 
-        if(cmd[0] != NULL){ // it's not blank
+        if((cmd[0] != NULL) || (cmd[0] != 0)){ // it's not blank/ seems redundant but eos server no likey just NULL
             status = exec_cmd(cmd); // exec on it
         }
 
