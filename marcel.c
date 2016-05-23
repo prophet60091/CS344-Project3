@@ -358,47 +358,6 @@ int exec_inShell(char ** cmd){
         bgFlag = 1;
     }
 
-    //ADDDED FOR TESTING ONLY:
-    rpos = checkBackground(cmd);
-    if(rpos > 0){
-
-        fd= changeOut(cmd, rpos, 1);
-
-        //strip out the end of cmd we wont need it anymore
-        cmd[rpos] = NULL;
-        cmd = realloc(cmd, (size_t)rpos);
-
-        //REQ print out if file cannot be created
-        if(fd < 0){
-
-            error("Could not redirect");
-            BIStatus = 1;
-            return BIStatus; // we don't want to kill everything because of one bad execution
-        }
-
-    }
-
-    rpos = checkRedirect(cmd);
-    if (rpos  > 0){
-
-        fd = changeOut(cmd, rpos, 0);  //alter the redirects as needed
-
-        //strip out the end of cmd we wont need it anymore
-        cmd[rpos] = NULL;
-        cmd = realloc(cmd, (size_t)rpos);
-
-        //REQ print out if file cannot be created
-        if(fd < 0){
-
-            error("Could not redirect");
-            BIStatus = 1;
-            return BIStatus; // we don't want to kill everything because of one bad execution
-        }
-    }
-
-
-    ///END TESTING///////////////////////////
-
     pcessID = fork();
     //printf("spawning processes..%i", pcessID);
     //partially adapted from lecture 9 cs344
@@ -464,6 +423,7 @@ int exec_inShell(char ** cmd){
                 error("bam!");
 
                 BIStatus = 1;
+                fflush(stdout); // maybe a good idea?
                 return BIStatus; // we don't want to kill everything because of one bad execution
 
             }else{
@@ -486,7 +446,7 @@ int exec_inShell(char ** cmd){
         // as long as the process didn't exit, or receive a signal, so it's waiting util that happens
         // when it does, we know that the child process is complete.
         default:
-
+            printf("BGFLAG SET  %i", bgFlag);
             if(!bgFlag){// we're not running a bgnd process so start waiting for the child to quit.
 
                 do {
