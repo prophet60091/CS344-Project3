@@ -44,7 +44,7 @@ int error(char *msg)
     return 1;
 }
 
-
+//todo move the kiddos function class of functions to their own h and file.
 //Struct Array functions - adapted from CS261, 2014
 void _initKiddos(kiddos *v, int capacity)
 {
@@ -239,7 +239,6 @@ int changeOut(char ** cmd, int rpos, int bgFlag){
     int fd2 = -10;
     int fd = -10;
     int dx = 0;  // if this is 0(stdin) were inputting not outputting
-    char buff[ARGSIZE]; // place to stuff the name used in the redirect
 
     //get the file name requestd:
     //its between rpos+1 and next space rmbr:getcwd(buff, CMDSIZE),
@@ -338,7 +337,6 @@ int exec_inShell(char ** cmd){
     pid_t pcessID = -5;
     pid_t wpid;
     int rpos = 0;
-    int dx=0;
     int fd = -1;
     int bgFlag = 0;
 
@@ -475,7 +473,7 @@ int handleBackground(){
 
     int status = 0;
     int i;
-    char bigBuff[128];
+
     //for each child in the background
     for(i=0; i < kids->size; i++){
 
