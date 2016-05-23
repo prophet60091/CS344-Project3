@@ -1,19 +1,16 @@
 //
 // Created by Robert Jackson on 5/18/2016.
 //
+#define _POSIX_SOURCE
 #include <stdio.h>
-#include <dirent.h>
 #include <string.h>
 #include <stdlib.h>
 #include <sys/unistd.h>
 #include <time.h>
-#include <sys/stat.h>
 #include <assert.h>
 #include <sys/wait.h>
-#include "marcel.h"
-#include <sys/types.h>
-#include <sys/stat.h>
 #include <fcntl.h>
+#include "marcel.h"
 
 #define ARYSZ(x)  ( (sizeof(x) / sizeof((x)[0])) )
 
