@@ -38,6 +38,7 @@ kiddos* kids;
 int error(char *msg)
 {
     perror(msg);
+    fflush(stdout);
     return 1;
 }
 
@@ -151,7 +152,7 @@ char** get_cmd(){
     char *toke;
     char **args = malloc(totalSize+1);
     char *ans = malloc(totalSize+1); //hold the user unputtdin
-    fflush(stdin);
+
     //output to screen the prompt
     fprintf(stdout, "\nMARCEL-0.1:> ");
     getline(&ans, &totalSize, stdin); // read form stdin
@@ -177,9 +178,8 @@ char** get_cmd(){
         args = realloc(args, 1); // trim off what we dont need;
     }
 
-
     free(ans);
-    free(toke);
+
 
     return args;
 
@@ -325,7 +325,7 @@ int exec_cmd(char **cmd){
     // print out status
     }else if(strcmp(cmd[0] , "status") == 0){
 
-            fprintf(stdin,"%i", status);
+            fprintf(stdout,"%i", status);
             fflush(stdout);
             return 0;
 
@@ -360,6 +360,26 @@ int exec_inShell(char ** cmd){
     if(rpos > 0) {
         bgFlag = 1;
     }
+//    //TESTING
+//    rpos = checkRedirect(cmd);
+//    if (rpos  > 0){
+//
+//        fd = changeOut(cmd, rpos, 0);  //alter the redirects as needed
+//
+//        //strip out the end of cmd we wont need it anymore
+//        cmd[rpos] = NULL;
+//        cmd = realloc(cmd, (size_t)rpos);
+//
+//        //REQ print out if file cannot be created
+//        if(fd < 0){
+//
+//            error("Could not redirect");
+//            BIStatus = 1;
+//            return BIStatus; // we don't want to kill everything because of one bad execution
+//        }
+//    }
+//    //
+
 
     pcessID = fork();
     //printf("spawning processes..%i", pcessID);
@@ -427,6 +447,7 @@ int exec_inShell(char ** cmd){
 
                 BIStatus = 1;
                 fflush(stdout); // maybe a good idea?
+                handleBackground();
                 return BIStatus; // we don't want to kill everything because of one bad execution
 
             }else{
@@ -441,6 +462,8 @@ int exec_inShell(char ** cmd){
                 if(status > 0){
                     BIStatus = 1;
                 }
+
+
                 return 0;
             }
         //ADAPTED FROM **http://brennan.io/2015/01/16/write-a-shell-in-c/**//
