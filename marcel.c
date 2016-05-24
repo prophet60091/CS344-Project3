@@ -338,7 +338,7 @@ int exec_cmd(char **cmd){
     // print out status
     }else if(strcmp(cmd[0] , "status") == 0){
 
-            printf("%i", status);
+            fprintf(stdout, "%i", status);
             return 0;
 
     //we have a comment ignore it
