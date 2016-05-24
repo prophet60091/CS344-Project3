@@ -21,8 +21,6 @@
 //*********************VARIABLES
 const int  CMDSIZE = 2048; // max size of commands
 const int ARGSIZE = 512; // max size of args
-const int MAXARGS = 2560;
-char *cmd;
 int status;
 int BIStatus = 0;
 
@@ -145,44 +143,39 @@ size_t addChild(kiddos* kids, pid_t id){
 //#################### Get Direction of the user
 // sets the ans variable for use in other functions
 
-char** get_cmd(){
+void get_cmd(){
 
-    size_t totalSize = MAXARGS+CMDSIZE;
+    size_t totalSize = CMDSIZE+1;
     char *toke;
-    char **args = malloc(totalSize+1);
-    char *ans = malloc(totalSize+1); //hold the user unput
+    //char *args = (char *)malloc(sizeof(char*) * ARGSIZE+1);
+    //char *ans = (char *)malloc(sizeof(char) * CMDSIZE+1); //hold the user input
+    char ans[CMDSIZE+1];
+    char *args[ARGSIZE+1];
 
+    memset(ans, 0, CMDSIZE+1);
+    memset(args, 0, ARGSIZE+1);
     //output to screen the prompt
-    fprintf(stdout, "\nMARCEL-0.1:> ");
-    //fgets(ans, (int)(totalSize), stdin); // read form stdin
-    getline(&ans, &totalSize, stdin) ;
-
-    if(!strchr(ans, '\n'))
-        while(fgetc(stdin)!='\n');//discard until newline
-
+    //fprintf(stdout, "\nMARCEL-0.1:> ");
+    fgets(ans, (int)(totalSize), stdin); // read form stdin
+    //getline(&ans, &totalSize, stdin) ;
+    printf("Read: %s", ans);
     //get rid of the \n char at the end
-    ans[strcspn(ans, "\n")] = 0;
+    //ans[strcspn(ans, "\n")] = 0;
 
-    //put the rest of the args in the remaining postions
-    toke = strtok(ans, " ");
-    int pos = 0;
-    while (toke != NULL){
-
-        args[pos] = toke;
-        toke = strtok(NULL, " "); //update toke, to next space
-        pos++;
-    }
-    if(pos > 0){
-        args = realloc(args, sizeof(char *) * pos+1); // trim off what we dont need;
-    }else{
-        args = realloc(args, 1); // trim off what we dont need;
-    }
+    //put the rest of the args in the remaining positions
+//    toke = strtok(ans, " ");
+//    int pos = 0;
+//    while (toke != NULL){
+//        args[pos] = malloc(strlen(toke)+1);
+//        args[pos] = toke;
+//        toke = strtok(NULL, " "); //update toke, to next space
+//        pos++;
+//    }
 
 
-    free(ans);
-    free(toke);
+    //printCmd(args);
 
-    return args;
+    //return args;
 
 }
 
@@ -569,20 +562,20 @@ int main(int argc, char *argv[]){
     while(status == 0 || status == 1){
 
         char ** cmd = NULL;
-        cmd = get_cmd(); // get the command from user
+        get_cmd(); // get the command from user
 
         if( (cmd[0] != NULL) && (strcmp(cmd[0], "")) != 0 ){
             //status = exec_cmd(cmd); // exec on it
         }
 
-        printCmd(cmd);
+        //;
 
         free(cmd);
-        handleBackground();
+        //handleBackground();
     }
 
     //free the memories
 
-    deleteKiddos(kids);
+   // deleteKiddos(kids);
 
 }
