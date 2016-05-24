@@ -147,10 +147,16 @@ size_t addChild(kiddos* kids, pid_t id){
 
 char** get_cmd(){
 
-    size_t totalSize = MAXARGS+CMDSIZE;
-    char *toke;
-    char **args = malloc(totalSize+1);
-    char *ans = malloc(totalSize+1); //hold the user unput
+    size_t totalSize = CMDSIZE+ARGSIZE;
+    char *ans, *toke;
+    char **args = malloc(sizeof(char*) * totalSize);
+
+    ans = (char *)malloc(totalSize+1); //hold the user unput
+
+    //make sure stdin is empty;//Flush it all!!!!
+    fseek(stdin,0,SEEK_END);
+    fflush(stdin);
+    fflush(stdout);  // bc of unexpl. behavior on EOS
 
     //output to screen the prompt
     fprintf(stdout, "\nMARCEL-0.1:> ");
@@ -260,7 +266,7 @@ int changeOut(char ** cmd, int rpos, int bgFlag){
 
             //direct standard out at dev/null
             fd2 = dup2(fd, 1);
-            if (fd2 < 0 ){
+            if ((int)fd2 < 0 ){
                 error("failed creating dev/null dup2");
                 return fd2;
             }
@@ -456,11 +462,11 @@ int exec_inShell(char ** cmd){
 
                 } while (!WIFEXITED(status) && !WIFSIGNALED(status));
 
-//                if(WIFSTOPPED(status)){
-//                    //Child FG process was stopped;
-//                    fprintf(stdout, "status stop signal was:%i", status);
-//
-//                }
+                if(WIFSTOPPED(status)){
+                    //Child FG process was stopped;
+                    fprintf(stdout, "status stop signal was:%i", status);
+
+                }
                 // we fisnishd a process and we have a redirect - better close the file;
                 // it might need to also be reset.
 
