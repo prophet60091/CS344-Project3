@@ -511,9 +511,9 @@ int handleBackground(){
             // something went wrong with the process
             if(status > 0) {
                 // Error
-                //fprintf(bigBuff, "Child Process:%i ended with %i status", (int) kids->childProcs[i], status);
-                error("Child Process died...probably dysentery, or lupus...nah, it's never lupus");
 
+                error("Child Process died...probably dysentery, or lupus...nah, it's never lupus");
+                fprintf(stdout, "Child Process:%i ended with %i status", (int) kids->childProcs[i], status);
                 //remove it from the watch list
                 removeAtKiddos(kids, i);
 
@@ -526,7 +526,7 @@ int handleBackground(){
             }else{// something went right with the process but it's done
 
                 // Child exited successfully
-                //fprintf(stdout, "Child Process:%i ended with %i status", (int)kids->childProcs[i], status);
+                fprintf(stdout, "Child Process:%i ended with %i status", (int)kids->childProcs[i], status);
                 BIStatus = 0;
 
                 //remove it from the watch list
