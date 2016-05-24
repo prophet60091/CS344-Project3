@@ -154,10 +154,10 @@ char** get_cmd(){
 
     //output to screen the prompt
     fprintf(stdout, "\nMARCEL-0.1:> ");
-    fgets(ans, (int)(totalSize), stdin); // read form stdin
+    getline(&ans, &totalSize, stdin); // read form stdin
 
-    if(!strchr(ans, '\n'))
-        while(fgetc(stdin)!='\n');//discard until newline
+//    if(!strchr(ans, '\n'))
+//        while(fgetc(stdin)!='\n');//discard until newline
 
     //get rid of the \n char at the end
     ans[strcspn(ans, "\n")] = 0;
