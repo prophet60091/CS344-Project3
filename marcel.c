@@ -559,7 +559,7 @@ int main(int argc, char *argv[]){
         char ** cmd = NULL;
         cmd = get_cmd(); // get the command from user
 
-        if((cmd[0] != NULL) || (cmd[0] != 0)){ // it's not blank/ seems redundant but eos server no likey just NULL
+        if((cmd[0] != NULL) && (strcmp(cmd[0], "")) != 0 ){ // it's not blank/ seems redundant but eos server no likey just NULL
             status = exec_cmd(cmd); // exec on it
         }
 
