@@ -22,10 +22,10 @@
 const int  CMDSIZE = 2048; // max size of commands
 const int ARGSIZE = 512; // max size of args
 const int MAXARGS = 2560;
-char *cmd;
+
 int status;
 int BIStatus = 0;
-
+char ** cmd;
 typedef struct kiddos{
     pid_t * childProcs;
     int size;
@@ -145,22 +145,25 @@ size_t addChild(kiddos* kids, pid_t id){
 //#################### Get Direction of the user
 // sets the ans variable for use in other functions
 
-char** get_cmd(){
+char** get_cmd(char ** cmd){
 
     size_t totalSize = CMDSIZE+ARGSIZE;
     char *ans, *toke;
     char **args = malloc(sizeof(char*) * totalSize);
 
-    ans = (char *)malloc(totalSize+1); //hold the user unput
+    ans = malloc(sizeof(char)*totalSize+1); //hold the user unput
 
     //make sure stdin is empty;//Flush it all!!!!
-    fseek(stdin,0,SEEK_END);
-    fflush(stdin);
-    fflush(stdout);  // bc of unexpl. behavior on EOS
+    //DEBUG fseek(stdin,0,SEEK_END);
+    //DEBUG fflush(stdin);
+    //debug
+
 
     //output to screen the prompt
-    printf("\nMARCEL-0.1:> ");
+    fprintf(stdout, "\nMARCEL-0.1:> ");
     fgets(ans, (int)(totalSize), stdin); // read form stdin
+
+
 
     if(!strchr(ans, '\n'))
         while(fgetc(stdin)!='\n');//discard until newline
@@ -174,15 +177,19 @@ char** get_cmd(){
     while (toke != NULL){
 
         args[pos] = toke;
+        //
+
+
         toke = strtok(NULL, " "); //update toke, to next space
         pos++;
     }
 
     args = realloc(args, sizeof(char *) * pos+1); // trim off what we dont need;
+    cmd = malloc(sizeof(char *) * pos);
+    cmd = args;
     free(ans);
-    free(toke);
 
-    return args;
+    return cmd;
 
 }
 
@@ -261,7 +268,7 @@ int changeOut(char ** cmd, int rpos, int bgFlag){
 
             //direct standard out at dev/null
             fd2 = dup2(fd, 1);
-            if ((int)fd2 < 0 ){
+            if (fd2 < 0 ){
                 error("failed creating dev/null dup2");
                 return fd2;
             }
@@ -336,6 +343,7 @@ int exec_cmd(char **cmd){
 
     } else{
 
+        //fprintf(stdout, "executing this %s with this as the first arg %s\n", cmd[0], cmd[1] );//DEBUG
         // not a built-in? Execute it.
         return exec_inShell(cmd);
     }
@@ -421,12 +429,11 @@ int exec_inShell(char ** cmd){
             //it failed
             if(status < 0){
 
-                //kill it!!
                 fprintf(stdout, "Child process quit with status: %i", status);
                 error("bam!");
 
                 BIStatus = 1;
-                fflush(stdout); // maybe a good idea?
+                //fflush(stdout); //DEBUG
                 return BIStatus; // we don't want to kill everything because of one bad execution
 
             }else{
@@ -446,7 +453,7 @@ int exec_inShell(char ** cmd){
         //ADAPTED FROM **http://brennan.io/2015/01/16/write-a-shell-in-c/**//
         //Too elegant to pass up. it works really well
         //  were storing the result of waitpid using WUNTRACED, (reports its status whether stopped or not)
-        // as long as the process didn't exit, or receive a signal, so it's waiting util that happens
+        // as long as the process didn't exit, or receive a signal, so it's waiting utill that happens
         // when it does, we know that the child process is complete.
         default:
             //printf("BGFLAG SET  %i", bgFlag);
@@ -464,9 +471,9 @@ int exec_inShell(char ** cmd){
                 }
                 // we fisnishd a process and we have a redirect - better close the file;
                 // it might need to also be reset.
-
-                fprintf(stdout, "Child process id that completed is %i\n", (int) wpid);
-                fprintf(stdout, "Child process exit status %i\n", status);
+                //DEBUG - Do i need to report on what finished?
+                //fprintf(stdout, "Child process id that completed is %i\n", (int) wpid);
+                //fprintf(stdout, "Child process exit status %i\n", status);
 
 
             }else{
@@ -555,18 +562,48 @@ int main(int argc, char *argv[]){
     // anything else we effed something up, Blame it on management.
     while(status == 0 || status == 1){
 
-        char ** cmd = NULL;
-        cmd = get_cmd(); // get the command from user
+        cmd = get_cmd(cmd); // get the command from user
 
         if((cmd[0] != NULL) || (cmd[0] != 0)){ // it's not blank/ seems redundant but eos server no likey just NULL
             status = exec_cmd(cmd); // exec on it
         }
-
+        free(cmd);
         handleBackground();
     }
 
+
     //free the memories
-    free(cmd);
+    //free(cmd);
     deleteKiddos(kids);
+
+//    size_t totalSize = CMDSIZE+ARGSIZE;
+//    char *ans, *toke;
+//    char **args = malloc(sizeof(char*) * totalSize);
+//
+//    ans = (char *)malloc(totalSize+1); //hold the user unput
+//
+//    //make sure stdin is empty;//Flush it all!!!!
+//    //fseek(stdin,0,SEEK_END);
+//    //fflush(stdin);
+//
+//    //output to screen the prompt
+//    fprintf(stdout, ":");
+//    fgets(ans, (int)(totalSize), stdin); // read form stdin
+//
+//    if(!strchr(ans, '\n'))
+//        while(fgetc(stdin)!='\n');//discard until newline
+//    int i =0;
+//    for(i =0; i < strlen(ans); i++){
+//        fprintf(stdout, "this:%s", ans);
+//    }
+//
+//    return 0;
+
+//    while(&cmd[p] != NULL){
+//        fprintf(stdout, "contents of getline - > %s", cmd[p]);
+//        p++;
+//    }
+
+
 
 }
