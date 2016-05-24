@@ -547,8 +547,6 @@ int main(int argc, char *argv[]){
 
     //Initialzations:
     kids = createKiddos(100);
-    char ** cmd = NULL;
-    cmd = malloc(sizeof(char*)*( MAXARGS+CMDSIZE)+1);
 
     //If status is 1 or 0 we're good
     // 1 means we got an error from child
