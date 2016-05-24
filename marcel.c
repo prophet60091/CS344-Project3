@@ -561,7 +561,7 @@ int main(int argc, char *argv[]){
             status = exec_cmd(cmd); // exec on it
         }
         free(cmd);
-       // handleBackground();
+        handleBackground();
     }
 
     //free the memories
