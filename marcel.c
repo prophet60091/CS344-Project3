@@ -150,8 +150,8 @@ char** get_cmd(){
     size_t totalSize = MAXARGS+CMDSIZE;
     char *toke;
     char **args = malloc(totalSize+1);
-    char *ans = malloc(totalSize+1); //hold the user unput
-
+    char *ans = malloc(totalSize+1); //hold the user unputtdin
+    fflush(stdin);
     //output to screen the prompt
     fprintf(stdout, "\nMARCEL-0.1:> ");
     getline(&ans, &totalSize, stdin); // read form stdin
@@ -325,7 +325,8 @@ int exec_cmd(char **cmd){
     // print out status
     }else if(strcmp(cmd[0] , "status") == 0){
 
-            printf("%i", status);
+            fprintf(stdin,"%i", status);
+            fflush(stdout);
             return 0;
 
     //we have a comment ignore it
