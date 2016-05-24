@@ -147,15 +147,10 @@ size_t addChild(kiddos* kids, pid_t id){
 
 char** get_cmd(){
 
-    size_t totalSize = CMDSIZE+ARGSIZE;
-    char *ans, *toke;
-    char **args = malloc(sizeof(char*) * totalSize);
-
-    ans = (char *)malloc(totalSize+1); //hold the user unput
-
-    //make sure stdin is empty;//Flush it all!!!!
-    fseek(stdin,0,SEEK_END);
-    fflush(stdin);
+    size_t totalSize = MAXARGS+CMDSIZE;
+    char *toke;
+    char **args = malloc(totalSize+1);
+    char *ans = malloc(totalSize+1); //hold the user unput
 
     //output to screen the prompt
     fprintf(stdout, "\nMARCEL-0.1:> ");
@@ -176,8 +171,13 @@ char** get_cmd(){
         toke = strtok(NULL, " "); //update toke, to next space
         pos++;
     }
+    if(pos > 0){
+        args = realloc(args, sizeof(char *) * pos+1); // trim off what we dont need;
+    }else{
+        args = realloc(args, 1); // trim off what we dont need;
+    }
 
-    args = realloc(args, sizeof(char *) * pos+1); // trim off what we dont need;
+
     free(ans);
     free(toke);
 
@@ -557,15 +557,15 @@ int main(int argc, char *argv[]){
         char ** cmd = NULL;
         cmd = get_cmd(); // get the command from user
 
-        if((cmd[0] != NULL) || (cmd[0] != 0)){ // it's not blank/ seems redundant but eos server no likey just NULL
+        if( (cmd[0] != NULL) && (strcmp(cmd[0], "")) != 0 ){ // it's not blank/ seems redundant but eos server no likey just NULL
             status = exec_cmd(cmd); // exec on it
         }
-
-        handleBackground();
+        free(cmd);
+       // handleBackground();
     }
 
     //free the memories
-    free(cmd);
+
     deleteKiddos(kids);
 
 }
