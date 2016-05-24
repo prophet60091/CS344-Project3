@@ -554,51 +554,20 @@ int main(int argc, char *argv[]){
     // 1 means we got an error from child
     // 0 means all is square
     // anything else we effed something up, Blame it on management.
-//    while(status == 0 || status == 1){
-//
-//        char ** cmd = NULL;
-//        cmd = get_cmd(); // get the command from user
-//
-//        if((cmd[0] != NULL) || (cmd[0] != 0)){ // it's not blank/ seems redundant but eos server no likey just NULL
-//            status = exec_cmd(cmd); // exec on it
-//        }
-//
-//        handleBackground();
-//    }
-//
+    while(status == 0 || status == 1){
 
-//    //free the memories
-//    free(cmd);
-//    deleteKiddos(kids);
+        char ** cmd = NULL;
+        cmd = get_cmd(); // get the command from user
 
-    size_t totalSize = CMDSIZE+ARGSIZE;
-    char *ans, *toke;
-    char **args = malloc(sizeof(char*) * totalSize);
+        if((cmd[0] != NULL) || (cmd[0] != 0)){ // it's not blank/ seems redundant but eos server no likey just NULL
+            status = exec_cmd(cmd); // exec on it
+        }
 
-    ans = (char *)malloc(totalSize+1); //hold the user unput
-
-    //make sure stdin is empty;//Flush it all!!!!
-    //fseek(stdin,0,SEEK_END);
-    //fflush(stdin);
-
-    //output to screen the prompt
-    fprintf(stdout, ":");
-    fgets(ans, (int)(totalSize), stdin); // read form stdin
-
-    if(!strchr(ans, '\n'))
-        while(fgetc(stdin)!='\n');//discard until newline
-    int i =0;
-    for(i =0; i < strlen(ans); i++){
-        fprintf(stdout, "this:%s", ans);
+        handleBackground();
     }
 
-    return 0;
-
-//    while(&cmd[p] != NULL){
-//        fprintf(stdout, "contents of getline - > %s", cmd[p]);
-//        p++;
-//    }
-
-
+    //free the memories
+    free(cmd);
+    deleteKiddos(kids);
 
 }
