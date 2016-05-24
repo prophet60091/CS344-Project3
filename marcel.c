@@ -522,7 +522,6 @@ int handleBackground(){
 
                 BIStatus = 1;
 
-
             }else{// something went right with the process but it's done
 
                 // Child exited successfully
