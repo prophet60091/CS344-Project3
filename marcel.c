@@ -154,7 +154,8 @@ char** get_cmd(){
 
     //output to screen the prompt
     fprintf(stdout, "\nMARCEL-0.1:> ");
-    fgets(ans, (int)(totalSize), stdin); // read form stdin
+    //fgets(ans, (int)(totalSize), stdin); // read form stdin
+    getline(&ans, &totalSize, stdin) ;
 
     if(!strchr(ans, '\n'))
         while(fgetc(stdin)!='\n');//discard until newline
@@ -264,12 +265,12 @@ int changeOut(char ** cmd, int rpos, int bgFlag){
                 error("failed creating dev/null dup2");
                 return fd2;
             }
-//            //direct standard in at dev/null
-//            fd2 = dup2(fd, 0);
-//            if ((int)fd2 < 0 ){
-//                error("failed creating dev/null dup2");
-//                return fd2;
-//            }
+            //direct standard in at dev/null
+            fd2 = dup2(fd, 0);
+            if ((int)fd2 < 0 ){
+                error("failed creating dev/null dup2");
+                return fd2;
+            }
          break;
 
         default:
@@ -543,6 +544,19 @@ void turnLightsOFF(void)
     handleBackground();
 }
 
+void printCmd(char ** cmd){
+
+    int pos = 0;
+    while(cmd[pos] != NULL){
+
+        fprintf(stdout, "%s", cmd[pos] );
+        fprintf(stdout, " " );
+        pos++;
+    }
+    fprintf(stdout, "\n" );
+
+}
+
 int main(int argc, char *argv[]){
 
     //Initialzations:
@@ -557,9 +571,12 @@ int main(int argc, char *argv[]){
         char ** cmd = NULL;
         cmd = get_cmd(); // get the command from user
 
-        if( (cmd[0] != NULL) && (strcmp(cmd[0], "")) != 0 ){ // it's not blank/ seems redundant but eos server no likey just NULL
-            status = exec_cmd(cmd); // exec on it
+        if( (cmd[0] != NULL) && (strcmp(cmd[0], "")) != 0 ){
+            //status = exec_cmd(cmd); // exec on it
         }
+
+        printCmd(cmd);
+
         free(cmd);
         handleBackground();
     }
