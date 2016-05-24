@@ -162,6 +162,7 @@ char** get_cmd(){
     printf("\nMARCEL-0.1:> ");
     fgets(ans, (int)(totalSize), stdin); // read form stdin
 
+
     if(!strchr(ans, '\n'))
         while(fgetc(stdin)!='\n');//discard until newline
 
@@ -455,13 +456,8 @@ int exec_inShell(char ** cmd){
                 do {
                     wpid = waitpid(pcessID, &status, WUNTRACED);
 
-                } while (!WIFEXITED(status) && !WIFSIGNALED(status));
+                } while (!WIFEXITED(status) && !WIFSIGNALED(status) && !WIFSTOPPED(status));
 
-                if(WIFSTOPPED(status)){
-                    //Child FG process was stopped;
-                    fprintf(stdout, "status stop signal was:%i", status);
-
-                }
                 // we fisnishd a process and we have a redirect - better close the file;
                 // it might need to also be reset.
 
@@ -562,12 +558,11 @@ int main(int argc, char *argv[]){
         if((cmd[0] != NULL) && (strcmp(cmd[0], "")) != 0 ){ // it's not blank/ seems redundant but eos server no likey just NULL
             status = exec_cmd(cmd); // exec on it
         }
-
+        free(cmd);
         handleBackground();
     }
 
     //free the memories
-    free(cmd);
     deleteKiddos(kids);
 
 }
