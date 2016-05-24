@@ -25,6 +25,7 @@ const int MAXARGS = 2560;
 char *cmd;
 int status;
 int BIStatus = 0;
+int BGStatus = 0;
 
 typedef struct kiddos{
     pid_t * childProcs;
@@ -115,6 +116,8 @@ void removeAtKiddos(kiddos *v, int idx){
 
 }
 
+
+//OPENS FILES FOR READING OR WRITING
 int open_file(char * fileName, int rw){
 
     int fd;
@@ -142,48 +145,56 @@ size_t addChild(kiddos* kids, pid_t id){
 
 }
 
-//#################### Get Direction of the user
+//#################### Read the line
 // sets the ans variable for use in other functions
+char * read_input(){
+    size_t lineSize = CMDSIZE;
+    char *ansBuffer = NULL; //hold the user unput
 
-char** get_cmd(){
-
-    size_t totalSize = CMDSIZE+ARGSIZE;
-    char *ans, *toke;
-    char **args = malloc(sizeof(char*) * totalSize);
-
-    ans = (char *)malloc(totalSize+1); //hold the user unput
-
-    //make sure stdin is empty;//Flush it all!!!!
-    fseek(stdin,0,SEEK_END);
-    fflush(stdin);
-    fflush(stdout);  // bc of unexpl. behavior on EOS
-
-    //output to screen the prompt
-    printf("\nMARCEL-0.1:> ");
-    fgets(ans, (int)(totalSize), stdin); // read form stdin
-
-
-    if(!strchr(ans, '\n'))
-        while(fgetc(stdin)!='\n');//discard until newline
+    getline(&ansBuffer, &lineSize, stdin);
 
     //get rid of the \n char at the end
-    ans[strcspn(ans, "\n")] = 0;
+    ansBuffer[strcspn(ansBuffer, "\n")] = 0;
+
+    return ansBuffer;
+}
+
+//####################Process the line
+// sets the ans variable for use in other functions
+char ** process_line(char * cmd){
+    int pos;
+    char *toke;
+    char ** result = malloc(sizeof(char*) * CMDSIZE);
+
 
     //put the rest of the args in the remaining postions
-    toke = strtok(ans, " ");
-    int pos = 0;
+    toke = strtok(cmd, " ");
+    pos = 0;
     while (toke != NULL){
 
-        args[pos] = toke;
+        result[pos] = toke;
         toke = strtok(NULL, " "); //update toke, to next space
         pos++;
     }
+    //add a null to the end
+    result[pos] = NULL;
 
-    args = realloc(args, sizeof(char *) * pos+1); // trim off what we dont need;
-    free(ans);
-    free(toke);
+    return result;
+}
 
-    return args;
+//Get the  user input:
+
+char** get_cmd(){
+
+    char * line;
+    char ** result;
+    //output to screen the prompt
+    fprintf(stdout, "\nMARCEL-0.1:>");
+
+    line = read_input();
+    result = process_line(line);
+
+    return result;
 
 }
 
@@ -266,12 +277,12 @@ int changeOut(char ** cmd, int rpos, int bgFlag){
                 error("failed creating dev/null dup2");
                 return fd2;
             }
-//            //direct standard in at dev/null
-//            fd2 = dup2(fd, 0);
-//            if ((int)fd2 < 0 ){
-//                error("failed creating dev/null dup2");
-//                return fd2;
-//            }
+            //direct standard in at dev/null
+            fd2 = dup2(fd, 0);
+            if ((int)fd2 < 0 ){
+                error("failed creating dev/null dup2");
+                return fd2;
+            }
          break;
 
         default:
@@ -373,6 +384,8 @@ int exec_inShell(char ** cmd){
             error("boom!");
             return status;
 
+
+        // WERE IN THE CHILD PROCESS
         case 0:
 
             //todo yes code is redundant, but..
@@ -392,8 +405,9 @@ int exec_inShell(char ** cmd){
                 if(fd < 0){
 
                     error("Could not redirect");
-                    BIStatus = 1;
-                    return BIStatus; // we don't want to kill everything because of one bad execution
+//                    BIStatus = 1;
+//                    return BIStatus; // we don't want to kill everything because of one bad execution
+                    return status = 1;
                 }
 
             }
@@ -411,8 +425,8 @@ int exec_inShell(char ** cmd){
                 if(fd < 0){
 
                     error("Could not redirect");
-                    BIStatus = 1;
-                    return BIStatus; // we don't want to kill everything because of one bad execution
+
+                    return status = 1; // we don't want to kill everything because of one bad execution
                 }
             }
 
@@ -423,12 +437,11 @@ int exec_inShell(char ** cmd){
             if(status < 0){
 
                 //kill it!!
-                fprintf(stdout, "Child process quit with status: %i", status);
+                fprintf(stdout, "Child process quit with status: %i- Command was %s", status, cmd[0]);
                 error("bam!");
 
-                BIStatus = 1;
                 fflush(stdout); // maybe a good idea?
-                return BIStatus; // we don't want to kill everything because of one bad execution
+                return status = 1; // we don't want to kill everything because of one bad execution
 
             }else{
                 // Code executed successfully
@@ -438,12 +451,10 @@ int exec_inShell(char ** cmd){
                 }
 
                 //sometimes we get a bad status but still return ok
-                BIStatus = 0;
-                if(status > 0){
-                    BIStatus = 1;
-                }
-                return 0;
+                return status = 0;
             }
+
+            // WERE IN THE PARENT
         //ADAPTED FROM **http://brennan.io/2015/01/16/write-a-shell-in-c/**//
         //Too elegant to pass up. it works really well
         //  were storing the result of waitpid using WUNTRACED, (reports its status whether stopped or not)
@@ -456,13 +467,13 @@ int exec_inShell(char ** cmd){
                 do {
                     wpid = waitpid(pcessID, &status, WUNTRACED);
 
-                } while (!WIFEXITED(status) && !WIFSIGNALED(status) && !WIFSTOPPED(status));
+                } while (!WIFEXITED(status) && !WIFSIGNALED(status));
 
                 // we fisnishd a process and we have a redirect - better close the file;
                 // it might need to also be reset.
 
-                fprintf(stdout, "Child process id that completed is %i\n", (int) wpid);
-                fprintf(stdout, "Child process exit status %i\n", status);
+                //fprintf(stdout, "Child process id that completed is %i\n", (int) wpid);
+                //fprintf(stdout, "Child process exit status %i\n", status);
 
 
             }else{
@@ -475,12 +486,12 @@ int exec_inShell(char ** cmd){
             //sometimes we get a bad status but still return ok
             // because shell should keep running
             if(status > 0){
-                BIStatus = 1;
-                return 1;
+                //BIStatus = 1;
+                return status = 1;
             }
     }
 
-    return 0; //fixes control reaches end of non-void (never executes tho...)
+    return status; //fixes control reaches end of non-void (never executes tho...)
 }
 // Handle Background Processes
 // Called to clean up BG process that did quit and announce this
@@ -502,6 +513,7 @@ int handleBackground(){
         } else if (waiter == -1) {
             //error("Nothing to clean up?...or some orther failure");
 
+        // Process is real - evaluate it
         } else {
 
             // something went wrong with the process
@@ -516,24 +528,32 @@ int handleBackground(){
                 //put it out of it's misery
                 kill(kids->childProcs[i], SIGKILL);
 
-                BIStatus = 1;
-
-
-            }else{// something went right with the process but it's done
+               BGStatus = 1;
+                // something went right with the process but it's done
+            }else{
 
                 // Child exited successfully
                 //fprintf(stdout, "Child Process:%i ended with %i status", (int)kids->childProcs[i], status);
-                BIStatus = 0;
+               BGStatus = 0;
 
                 //remove it from the watch list
                 removeAtKiddos(kids, i);
 
             }
-
         }
     }
 
     return status;
+}
+
+void lsh_free_args(char **args)
+{
+  char **iter = args;
+  while (*iter != NULL) {
+    free(*iter);
+    iter++;
+  }
+  free(args);
 }
 
 void turnLightsOFF(void)
@@ -555,14 +575,16 @@ int main(int argc, char *argv[]){
         char ** cmd = NULL;
         cmd = get_cmd(); // get the command from user
 
-        if((cmd[0] != NULL) && (strcmp(cmd[0], "")) != 0 ){ // it's not blank/ seems redundant but eos server no likey just NULL
+        if((cmd[0] != NULL) && (strcmp(cmd[0], "")) != 0 && (strcmp(cmd[0], "\\n")) != 0 ){ // it's not blank/ seems redundant but eos server no likey just NULL
             status = exec_cmd(cmd); // exec on it
         }
-        free(cmd);
+
         handleBackground();
+        lsh_free_args(cmd);
     }
 
     //free the memories
     deleteKiddos(kids);
+
 
 }

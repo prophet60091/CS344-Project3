@@ -7,7 +7,7 @@
 
 int exec_inShell( char ** fullCmd);
 int exec_cmd(char **cmd);
-char **get_cmd();
+char ** get_cmd();
 int error(char *msg);
 int checkCmdSize(char ** cmd);
 int checkRedirect(char ** cmd);
