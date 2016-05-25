@@ -190,7 +190,8 @@ char** get_cmd(){
     char ** result;
     //output to screen the prompt
     fprintf(stdout, "\nMARCEL-0.1:>");
-
+    fflush(stdin);
+    fflush(stdout);
     line = read_input();
     result = process_line(line);
 
@@ -415,45 +416,6 @@ int exec_inShell(char ** cmd){
         bgFlag = 1;
     }
 
-    rpos = checkBackground(cmd);
-    if(rpos > 0){
-
-        fd= changeOut(cmd, rpos, 1);
-
-        //strip out the end of cmd we wont need it anymore
-        cmd[rpos] = NULL;
-        cmd = realloc(cmd, (size_t)rpos);
-
-        //REQ print out if file cannot be created
-        if(fd < 0){
-
-            error("Could not redirect");
-//                    BIStatus = 1;
-//                    return BIStatus; // we don't want to kill everything because of one bad execution
-            return status = 1;
-        }
-
-    }
-    // checks if the code has any redirects
-    rpos = checkRedirect(cmd);
-    if (rpos  > 0){
-
-        fd = changeOut(cmd, rpos, 0);  //alter the redirects as needed
-
-        //strip out the end of cmd we wont need it anymore
-        cmd[rpos] = NULL;
-        cmd = realloc(cmd, (size_t)rpos);
-
-        //REQ print out if file cannot be created
-        if(fd < 0){
-
-            error("Could not redirect");
-
-            return status = 1; // we don't want to kill everything because of one bad execution
-        }
-    }
-
-
     pcessID = fork();
     //printf("spawning processes..%i", pcessID);
     //partially adapted from lecture 9 cs344
@@ -474,43 +436,43 @@ int exec_inShell(char ** cmd){
             // relies so much on the values getting set it's hard to pack it into one function
             //if process has a redirect:
             //If process has a & background process request
-//            rpos = checkBackground(cmd);
-//            if(rpos > 0){
-//
-//                fd= changeOut(cmd, rpos, 1);
-//
-//                //strip out the end of cmd we wont need it anymore
-//                cmd[rpos] = NULL;
-//                cmd = realloc(cmd, (size_t)rpos);
-//
-//                //REQ print out if file cannot be created
-//                if(fd < 0){
-//
-//                    error("Could not redirect");
-////                    BIStatus = 1;
-////                    return BIStatus; // we don't want to kill everything because of one bad execution
-//                    return status = 1;
-//                }
-//
-//            }
-//            // checks if the code has any redirects
-//            rpos = checkRedirect(cmd);
-//            if (rpos  > 0){
-//
-//                fd = changeOut(cmd, rpos, 0);  //alter the redirects as needed
-//
-//                //strip out the end of cmd we wont need it anymore
-//                cmd[rpos] = NULL;
-//                cmd = realloc(cmd, (size_t)rpos);
-//
-//                //REQ print out if file cannot be created
-//                if(fd < 0){
-//
-//                    error("Could not redirect");
-//
-//                    return status = 1; // we don't want to kill everything because of one bad execution
-//                }
-//            }
+            rpos = checkBackground(cmd);
+            if(rpos > 0){
+
+                fd= changeOut(cmd, rpos, 1);
+
+                //strip out the end of cmd we wont need it anymore
+                cmd[rpos] = NULL;
+                cmd[rpos+1] = NULL;
+
+                //REQ print out if file cannot be created
+                if(fd < 0){
+
+                    error("Could not redirect");
+//                    BIStatus = 1;
+//                    return BIStatus; // we don't want to kill everything because of one bad execution
+                    return status = 1;
+                }
+
+            }
+            // checks if the code has any redirects
+            rpos = checkRedirect(cmd);
+            if (rpos  > 0){
+
+                fd = changeOut(cmd, rpos, 0);  //alter the redirects as needed
+
+                //strip out the end of cmd we wont need it anymore
+                cmd[rpos] = NULL;
+                cmd[rpos+1] = NULL;
+
+                //REQ print out if file cannot be created
+                if(fd < 0){
+
+                    error("Could not redirect");
+
+                    return status = 1; // we don't want to kill everything because of one bad execution
+                }
+            }
 
             // execute it and save the status of the command
             status = execvp(cmd[0], cmd);
