@@ -67,7 +67,7 @@ pwd
 echo
 echo
 echo --------------------
-echo cd
+echo cd 
 cd
 echo
 echo
