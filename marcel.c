@@ -514,7 +514,7 @@ int exec_inShell(char ** cmd){
                 do {
                     wpid = waitpid(pcessID, &status, WUNTRACED);
 
-                } while (!WIFEXITED(status) && !WIFSIGNALED(status) && WIFSTOPPED(status));
+                } while (!WIFEXITED(status) && !WIFSIGNALED(status));
 
                 // we fisnishd a process and we have a redirect - better close the file;
                 // it might need to also be reset.
