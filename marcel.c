@@ -138,7 +138,7 @@ int open_file(char * fileName, int rw){
     return fd; // returning the file pointer
 }
 
-size_t addChild(kiddos* kids, pid_t id){
+void addChild(kiddos* kids, pid_t id){
 
     kids->childProcs[kids->size]= id;
     kids->size++;
@@ -357,28 +357,17 @@ int exec_cmd(char **cmd){
 
 }
 
-
 //Prints out the entirety of the commnd
 void printCmdtoFILE(char ** cmd){
     FILE * fp;
     fp = fopen("COMMAND", "a");
     int pos = 0;
 
-    union u {
-        char * d;
-        unsigned char c[sizeof(char*)];
-    };
-    union u tmp;
-    size_t i;
     while(cmd[pos] != NULL){
 
         fprintf(fp, "%s", cmd[pos] );
         fprintf(fp, " ");
-        tmp.d = cmd[pos];
-
         //fprintf(fp," MEM: %02x", tmp.c[pos]);
-
-
         pos++;
     }
     fprintf(fp, "\n" );
@@ -392,17 +381,11 @@ void printCmd(char ** cmd, char * loc){
 
     int pos = 0;
 
-    union u {
-        char * d;
-        unsigned char c[sizeof(char*)];
-    };
-    union u tmp;
-    size_t i;
+
     while(cmd[pos] != NULL){
 
         fprintf(stdout, "%s - location - %s", cmd[pos], loc );
         fprintf(stdout, " ");
-        tmp.d = cmd[pos];
 
         //fprintf(fp," MEM: %02x", tmp.c[pos]);
 
