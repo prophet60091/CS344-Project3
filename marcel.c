@@ -360,7 +360,7 @@ int exec_cmd(char **cmd){
 
 
 //Prints out the entirety of the commnd
-void printCmd(char ** cmd){
+void printCmdtoFILE(char ** cmd){
     FILE * fp;
     fp = fopen("COMMAND", "a");
     int pos = 0;
@@ -386,6 +386,31 @@ void printCmd(char ** cmd){
 
 
     fclose(fp);
+
+}
+//Prints out the entirety of the commnd
+void printCmd(char ** cmd, char * loc){
+
+    int pos = 0;
+
+    union u {
+        char * d;
+        unsigned char c[sizeof(char*)];
+    };
+    union u tmp;
+    size_t i;
+    while(cmd[pos] != NULL){
+
+        fprintf(stdout, "%s - location - %s", cmd[pos], loc );
+        fprintf(stdout, " ");
+        tmp.d = cmd[pos];
+
+        //fprintf(fp," MEM: %02x", tmp.c[pos]);
+
+
+        pos++;
+    }
+    fprintf(stdout, "\n" );
 
 }
 

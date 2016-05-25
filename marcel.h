@@ -17,6 +17,6 @@ int open_file( char * fileName, int rw);
 int handleBackground();
 int checkBackground(char ** cmd);
 void turnLightsOFF(void);
-void printCmd(char ** cmd);
-
+void printCmdtoFILE(char ** cmd);
+void printCmd(char ** cmd, char * loc);
 #endif //PROJECT3_MARCEL_H
