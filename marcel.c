@@ -484,9 +484,9 @@ int exec_inShell(char ** cmd){
             if(status < 0){
 
                 //kill it!!
-                fprintf(stdout, "Child process %i quit with status: %i- Command was %s", pcessID, status, cmd[0]);
+                fprintf(stdout, "Child process %i quit with status: %i- Command was %s\n", pcessID, status, cmd[0]);
                 fflush(stdout);
-                //error("bam!");
+                error("Doh!");
 
                 return status = 1; // we don't want to kill everything because of one bad execution
 
