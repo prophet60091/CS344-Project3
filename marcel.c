@@ -194,7 +194,7 @@ char** get_cmd(){
     line = read_input();
     result = process_line(line);
 
-    printCmd(result);
+    //printCmd(result);
 
     return result;
 
@@ -319,7 +319,7 @@ int exec_cmd(char **cmd){
 
     // First, handle Built-ins
     //if cmd equals shell command
-    printCmd(cmd);
+    //printCmd(cmd);
 
     if(strcmp(cmd[0] , "exit") == 0){
 
@@ -330,7 +330,7 @@ int exec_cmd(char **cmd){
     }else if(strcmp(cmd[0] , "cd") == 0){
 
         if(checkCmdSize(cmd) <= 1){
-            cmd = realloc(cmd, sizeof(char*)*2);
+            //cmd = realloc(cmd, sizeof(char*)*2);
             cmd[1]= getenv("HOME");
 
         }
@@ -442,10 +442,11 @@ int exec_inShell(char ** cmd){
             //it's in a bad state
             status = 1;
             error("boom!");
+            exit(1);
             return status;
 
 
-        // WERE IN THE CHILD PROCESS
+        // WE'RE IN THE CHILD PROCESS
         case 0:
 
             //todo yes code is redundant, but..
@@ -527,13 +528,13 @@ int exec_inShell(char ** cmd){
                 do {
                     wpid = waitpid(pcessID, &status, WUNTRACED);
 
-                } while (!WIFEXITED(status) && !WIFSIGNALED(status));
+                } while (!WIFEXITED(status) && !WIFSIGNALED(status) );
 
                 // we fisnishd a process and we have a redirect - better close the file;
                 // it might need to also be reset.
 
-                //fprintf(stdout, "Child process id that completed is %i\n", (int) wpid);
-                //fprintf(stdout, "Child process exit status %i\n", status);
+                fprintf(stdout, "Child process id that completed is %i\n", (int) wpid);
+                fprintf(stdout, "Child process exit status %i\n", status);
 
 
             }else{
@@ -634,17 +635,17 @@ int main(int argc, char *argv[]){
 
         char ** cmd = NULL;
         cmd = get_cmd(); // get the command from user
-        printCmd(cmd);
+        //printCmd(cmd);
         if((cmd[0] != NULL) && (strcmp(cmd[0], "")) != 0 && (strcmp(cmd[0], "\r")) != 0 ){ // it's not blank/ seems redundant but eos server no likey just NULL
             status = exec_cmd(cmd); // exec on it
         }
 
         handleBackground();
-        lsh_free_args(cmd);
+       //lsh_free_args(cmd);
     }
 
     //free the memories
-    deleteKiddos(kids);
+    //deleteKiddos(kids);
 
 
 }
