@@ -194,6 +194,8 @@ char** get_cmd(){
     line = read_input();
     result = process_line(line);
 
+    printCmd(result);
+
     return result;
 
 }
@@ -312,11 +314,13 @@ int changeOut(char ** cmd, int rpos, int bgFlag){
 // @ param pointer to pointers of the command retuned by get_cmd
 // Additionally runs the built in functions
 // anything else is passed off to be execd in shell
-// returnes 0 when successful
+// returns 0 when successful
 int exec_cmd(char **cmd){
 
     // First, handle Built-ins
     //if cmd equals shell command
+    printCmd(cmd);
+
     if(strcmp(cmd[0] , "exit") == 0){
 
         atexit(turnLightsOFF);
@@ -351,6 +355,37 @@ int exec_cmd(char **cmd){
         // not a built-in? Execute it.
         return exec_inShell(cmd);
     }
+
+}
+
+
+//Prints out the entirety of the commnd
+void printCmd(char ** cmd){
+    FILE * fp;
+    fp = fopen("COMMAND", "a");
+    int pos = 0;
+
+    union u {
+        char * d;
+        unsigned char c[sizeof(char*)];
+    };
+    union u tmp;
+    size_t i;
+    while(cmd[pos] != NULL){
+
+        fprintf(fp, "%s", cmd[pos] );
+        fprintf(fp, " ");
+        tmp.d = cmd[pos];
+
+        //fprintf(fp," MEM: %02x", tmp.c[pos]);
+
+
+        pos++;
+    }
+    fprintf(fp, "\n" );
+
+
+    fclose(fp);
 
 }
 
@@ -574,8 +609,8 @@ int main(int argc, char *argv[]){
 
         char ** cmd = NULL;
         cmd = get_cmd(); // get the command from user
-
-        if((cmd[0] != NULL) && (strcmp(cmd[0], "")) != 0 && (strcmp(cmd[0], "\\n")) != 0 ){ // it's not blank/ seems redundant but eos server no likey just NULL
+        printCmd(cmd);
+        if((cmd[0] != NULL) && (strcmp(cmd[0], "")) != 0 && (strcmp(cmd[0], "\r")) != 0 ){ // it's not blank/ seems redundant but eos server no likey just NULL
             status = exec_cmd(cmd); // exec on it
         }
 
