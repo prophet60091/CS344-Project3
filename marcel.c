@@ -509,7 +509,7 @@ int exec_inShell(char ** cmd){
         // when it does, we know that the child process is complete.
         default:
             //printf("BGFLAG SET  %i", bgFlag);
-
+            if(!bgFlag) {// we're not running a bgnd process so start waiting for the child to quit.
 
                 do {
                     wpid = waitpid(pcessID, &status, WUNTRACED);
@@ -523,10 +523,10 @@ int exec_inShell(char ** cmd){
 //                fprintf(stdout, "Child process exit status %i\n", status);
 //                fflush(stdout);
 
-            if(bgFlag){// we're not running a bgnd process so start waiting for the child to quit.
+            }else{
                 // store the process - WE HAVE A BG PROCESS TO DEAL WITH
                 addChild(kids, pcessID);
-                fprintf(stdout, "Background process started: %i\n", wpid);
+                fprintf(stdout, "Background process started: %i\n", pcessID);
                 fflush(stdout);
 
             }
