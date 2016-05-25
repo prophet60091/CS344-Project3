@@ -149,9 +149,9 @@ size_t addChild(kiddos* kids, pid_t id){
 // sets the ans variable for use in other functions
 char * read_input(){
     size_t lineSize = CMDSIZE;
-    char *ansBuffer = NULL; //hold the user unput
+    char *ansBuffer = malloc(sizeof(char*)*CMDSIZE); //hold the user unput
 
-    getline(&ansBuffer, &lineSize, stdin);
+    fgets(ansBuffer, (int)lineSize, stdin);
 
     //get rid of the \n char at the end
     ansBuffer[strcspn(ansBuffer, "\n")] = 0;
@@ -473,9 +473,9 @@ int exec_inShell(char ** cmd){
 
                 //kill it!!
                 fprintf(stdout, "Child process quit with status: %i- Command was %s", status, cmd[0]);
-                error("bam!");
+                //error("bam!");
 
-                fflush(stdout); // maybe a good idea?
+                //fflush(stdout); // maybe a good idea?
                 return status = 1; // we don't want to kill everything because of one bad execution
 
             }else{
