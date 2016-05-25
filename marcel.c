@@ -189,10 +189,10 @@ char** get_cmd(){
 
     char * line;
     char ** result;
-    //output to screen the prompt
+    //output to screen; the prompt
     fprintf(stdout, "\nMARCEL-0.1:>");
-    fflush(stdin);
     fflush(stdout);
+
     line = read_input();
     result = process_line(line);
 
@@ -326,6 +326,7 @@ int exec_cmd(char **cmd){
     if(strcmp(cmd[0] , "exit") == 0){
 
         atexit(turnLightsOFF);
+        exit(0);
 
     //Changing the Dir
     }else if(strcmp(cmd[0] , "cd") == 0){
@@ -378,6 +379,7 @@ void printCmdtoFILE(char ** cmd){
     fclose(fp);
 
 }
+
 //Prints out the entirety of the commnd
 void printCmd(char ** cmd, char * loc){
 
@@ -474,15 +476,15 @@ int exec_inShell(char ** cmd){
                     return status = 1; // we don't want to kill everything because of one bad execution
                 }
             }
-
+            printCmdtoFILE(cmd);
             // execute it and save the status of the command
             status = execvp(cmd[0], cmd);
-
+            fflush(stdout);
             //it failed
             if(status < 0){
 
                 //kill it!!
-                fprintf(stdout, "Child process quit with status: %i- Command was %s", status, cmd[0]);
+                fprintf(stdout, "Child process %i quit with status: %i- Command was %s", status, pcessID, cmd[0]);
                 fflush(stdout);
                 //error("bam!");
 
@@ -507,12 +509,12 @@ int exec_inShell(char ** cmd){
         // when it does, we know that the child process is complete.
         default:
             //printf("BGFLAG SET  %i", bgFlag);
-            if(!bgFlag){// we're not running a bgnd process so start waiting for the child to quit.
+
 
                 do {
                     wpid = waitpid(pcessID, &status, WUNTRACED);
 
-                } while (!WIFEXITED(status) && !WIFSIGNALED(status) && !WIFSTOPPED(status));
+                } while (!WIFEXITED(status) && !WIFSIGNALED(status) && WIFSTOPPED(status));
 
                 // we fisnishd a process and we have a redirect - better close the file;
                 // it might need to also be reset.
@@ -521,11 +523,10 @@ int exec_inShell(char ** cmd){
 //                fprintf(stdout, "Child process exit status %i\n", status);
 //                fflush(stdout);
 
-
-            }else{
+            if(bgFlag){// we're not running a bgnd process so start waiting for the child to quit.
                 // store the process - WE HAVE A BG PROCESS TO DEAL WITH
                 addChild(kids, pcessID);
-                fprintf(stdout, "Background process started: %i\n", pcessID);
+                fprintf(stdout, "Background process started: %i\n", wpid);
                 fflush(stdout);
 
             }
@@ -607,7 +608,7 @@ void turnLightsOFF(void)
 {
     handleBackground();
     kill(0, SIGKILL);
-    //exit(0);
+    exit(0);
 }
 
 int main(int argc, char *argv[]){
