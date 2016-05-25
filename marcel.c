@@ -39,6 +39,7 @@ kiddos* kids;
 int error(char *msg)
 {
     perror(msg);
+    fflush(stdout);
     return 1;
 }
 
@@ -482,9 +483,9 @@ int exec_inShell(char ** cmd){
 
                 //kill it!!
                 fprintf(stdout, "Child process quit with status: %i- Command was %s", status, cmd[0]);
+                fflush(stdout);
                 //error("bam!");
 
-                //fflush(stdout); // maybe a good idea?
                 return status = 1; // we don't want to kill everything because of one bad execution
 
             }else{
@@ -511,19 +512,21 @@ int exec_inShell(char ** cmd){
                 do {
                     wpid = waitpid(pcessID, &status, WUNTRACED);
 
-                } while (!WIFEXITED(status) && !WIFSIGNALED(status) );
+                } while (!WIFEXITED(status) && !WIFSIGNALED(status) && !WIFSTOPPED(status));
 
                 // we fisnishd a process and we have a redirect - better close the file;
                 // it might need to also be reset.
 
-                fprintf(stdout, "Child process id that completed is %i\n", (int) wpid);
-                fprintf(stdout, "Child process exit status %i\n", status);
+//                fprintf(stdout, "Child process id that completed is %i\n", (int) wpid);
+//                fprintf(stdout, "Child process exit status %i\n", status);
+//                fflush(stdout);
 
 
             }else{
                 // store the process - WE HAVE A BG PROCESS TO DEAL WITH
                 addChild(kids, pcessID);
                 fprintf(stdout, "Background process started: %i\n", pcessID);
+                fflush(stdout);
 
             }
 
