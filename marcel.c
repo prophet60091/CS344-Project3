@@ -324,7 +324,6 @@ int exec_cmd(char **cmd){
     if(strcmp(cmd[0] , "exit") == 0){
 
         atexit(turnLightsOFF);
-        exit(1);//todo fix this it's not right needs to handle kill of children
 
     //Changing the Dir
     }else if(strcmp(cmd[0] , "cd") == 0){
@@ -460,7 +459,7 @@ int exec_inShell(char ** cmd){
 
                 //strip out the end of cmd we wont need it anymore
                 cmd[rpos] = NULL;
-                cmd = realloc(cmd, (size_t)rpos);
+                //cmd = realloc(cmd, (size_t)rpos);
 
                 //REQ print out if file cannot be created
                 if(fd < 0){
@@ -480,7 +479,7 @@ int exec_inShell(char ** cmd){
 
                 //strip out the end of cmd we wont need it anymore
                 cmd[rpos] = NULL;
-                cmd = realloc(cmd, (size_t)rpos);
+                //cmd = realloc(cmd, (size_t)rpos);
 
                 //REQ print out if file cannot be created
                 if(fd < 0){
@@ -620,6 +619,8 @@ void lsh_free_args(char **args)
 void turnLightsOFF(void)
 {
     handleBackground();
+    kill(0, SIGKILL);
+    //exit(0);
 }
 
 int main(int argc, char *argv[]){
