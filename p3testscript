@@ -29,19 +29,6 @@ wc < junk
 echo
 echo
 echo --------------------
-echo test -f badfile (10 points for returning error value of 1)
-test -f badfile
-status
-echo
-echo
-echo --------------------
-echo wc in badfile (10 points for returning text error)
-wc < badfile
-echo
-echo
-echo --------------------
-echo badfile (10 points for returning text error)
-badfile
 echo
 echo
 echo --------------------
